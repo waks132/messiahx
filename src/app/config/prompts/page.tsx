@@ -6,25 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Save, RotateCcw, Info, AlertTriangle, MessageSquareQuote, SearchCode, PencilRuler } from "lucide-react";
+import { Save, RotateCcw, Info, AlertTriangle, MessageSquareQuote, SearchCode, PencilRuler, BookOpenCheck, Brain, Drama, ListChecks } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { LoadingSpinner } from '@/components/loading-spinner';
 
 interface PromptDetail {
   name: string;
   description: string;
-  prompt?: string; // For analysis prompts
-  system_prompt_template?: string; // For reformulation prompts
-  user_prompt_template?: string; // For reformulation prompts
-  prompt_template?: string; // For research prompts
+  prompt?: string; 
+  system_prompt_template?: string; 
+  user_prompt_template?: string; 
+  prompt_template?: string; 
 }
 
 interface PromptCategory {
   [key: string]: PromptDetail;
 }
 
-interface PromptsData {
+export interface PromptsData {
   analysisPrompts?: PromptCategory;
+  classificationPrompts?: PromptCategory;
+  narrativePrompts?: PromptCategory;
+  summaryPrompts?: PromptCategory;
   reformulationPrompts?: PromptCategory;
   researchPrompts?: PromptCategory;
 }
@@ -45,7 +48,7 @@ export default function PromptConfigPage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const defaultPromptsPath = '/prompts.json'; // Path in the public folder
+  const defaultPromptsPath = '/prompts.json';
 
   const fetchPrompts = async (path: string) => {
     setIsLoading(true);
@@ -85,13 +88,13 @@ export default function PromptConfigPage() {
         setIsLoading(false);
       } catch (e) {
         console.error("Error parsing stored prompts:", e);
-        localStorage.removeItem('user_prompts'); // Clear invalid data
+        localStorage.removeItem('user_prompts'); 
         fetchPrompts(defaultPromptsPath);
       }
     } else {
       fetchPrompts(defaultPromptsPath);
     }
-  }, []); // defaultPromptsPath is constant, removed from deps
+  }, []);
 
   const handlePromptChange = (categoryKey: keyof PromptsData, promptKey: string, field: keyof PromptDetail, value: string) => {
     setPrompts(prevPrompts => {
@@ -119,7 +122,8 @@ export default function PromptConfigPage() {
         setIsSaving(false);
         toast({
           title: "Prompts sauvegardés !",
-          description: "Vos modifications ont été sauvegardées localement dans votre navigateur.",
+          description: "Vos modifications ont été sauvegardées localement dans votre navigateur. Note: Pour que les flux d'IA utilisent ces prompts modifiés (sauf s'ils sont configurés via Firebase Remote Config), un redéploiement peut être nécessaire si les prompts sont lus depuis public/prompts.json au build, ou les flux doivent être adaptés pour lire dynamiquement depuis localStorage (non implémenté).",
+          duration: 9000,
         });
       }, 500);
     }
@@ -130,12 +134,12 @@ export default function PromptConfigPage() {
     fetchPrompts(defaultPromptsPath);
     toast({
       title: "Prompts réinitialisés",
-      description: "Les prompts ont été réinitialisés à leurs valeurs par défaut.",
+      description: "Les prompts ont été réinitialisés à leurs valeurs par défaut (depuis public/prompts.json).",
     });
   };
   
   const renderPromptFields = (categoryKey: keyof PromptsData, promptKey: string, promptDetail: PromptDetail) => {
-    if (categoryKey === "analysisPrompts") {
+    if (categoryKey === "analysisPrompts" || categoryKey === "classificationPrompts" || categoryKey === "narrativePrompts" || categoryKey === "summaryPrompts") {
       return (
         <>
           <div className="space-y-2">
@@ -153,7 +157,7 @@ export default function PromptConfigPage() {
               <PromptTextArea value={promptDetail.system_prompt_template} onChange={(val) => handlePromptChange(categoryKey, promptKey, 'system_prompt_template', val)} rows={8}/>
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground">Template de Prompt Utilisateur (variables comme '{"{{text}}"}'}) :</label>
+              <label className="text-sm font-medium text-muted-foreground">Template de Prompt Utilisateur (variable: {"{text}"}) :</label>
               <PromptTextArea value={promptDetail.user_prompt_template} onChange={(val) => handlePromptChange(categoryKey, promptKey, 'user_prompt_template', val)} rows={4}/>
             </div>
           </div>
@@ -163,13 +167,13 @@ export default function PromptConfigPage() {
        return (
         <>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">Template de Prompt de Recherche (variables comme '{"{{text}}"}' ou '{"{{query}}"}'}) :</label>
+            <label className="text-sm font-medium text-muted-foreground">Template de Prompt de Recherche (variables: {"{{text}}"} ou {"{{query}}"}, {"{{language}}"}) :</label>
             <PromptTextArea value={promptDetail.prompt_template} onChange={(val) => handlePromptChange(categoryKey, promptKey, 'prompt_template', val)} rows={10} />
           </div>
         </>
       );
     }
-    return <p className="text-destructive">Type de prompt non reconnu pour l'édition.</p>;
+    return <p className="text-destructive">Type de prompt non reconnu pour l'édition : {categoryKey}</p>;
   };
 
 
@@ -191,9 +195,12 @@ export default function PromptConfigPage() {
   }
 
   const promptCategoriesMap: { key: keyof PromptsData; title: string; icon: React.ElementType }[] = [
-    { key: 'analysisPrompts', title: 'Prompts d\'Analyse Cognitive', icon: SearchCode },
+    { key: 'analysisPrompts', title: 'Prompts d\'Analyse Initiale du Discours', icon: SearchCode },
+    { key: 'classificationPrompts', title: 'Prompts de Classification Cognitive', icon: Brain },
+    { key: 'narrativePrompts', title: 'Prompts de Détection de Narratifs Cachés', icon: Drama },
+    { key: 'summaryPrompts', title: 'Prompts de Résumé Critique', icon: BookOpenCheck },
     { key: 'reformulationPrompts', title: 'Prompts de Reformulation de Texte', icon: PencilRuler },
-    { key: 'researchPrompts', title: 'Prompts de Recherche Contextuelle', icon: MessageSquareQuote },
+    { key: 'researchPrompts', title: 'Prompts de Recherche (Contextuelle/Manipulation)', icon: MessageSquareQuote },
   ];
 
   return (
@@ -205,7 +212,11 @@ export default function PromptConfigPage() {
             Visualisez et modifiez les prompts utilisés par les différents modules d'IA.
             <br />
             <span className="text-xs text-muted-foreground bg-muted/30 p-1 rounded inline-flex items-center gap-1 mt-2">
-              <Info size={14}/> Actuellement, les modifications sont sauvegardées <strong className="font-semibold">localement dans votre navigateur</strong>.
+              <Info size={14}/> Les modifications sont sauvegardées localement. Pour une gestion dynamique (sans redéploiement), envisagez Firebase Remote Config.
+            </span>
+             <br />
+            <span className="text-xs text-orange-500 bg-orange-500/10 p-1 rounded inline-flex items-center gap-1 mt-1">
+              <AlertTriangle size={14}/> Les flux d'IA actuels utilisent des prompts définis dans leur code ou via un service (ex: Remote Config). Cette page sert à visualiser/éditer une copie locale (<code>public/prompts.json</code>) ou les valeurs par défaut.
             </span>
           </CardDescription>
         </CardHeader>
@@ -213,11 +224,11 @@ export default function PromptConfigPage() {
           <div className="flex flex-wrap gap-2 mb-6">
             <Button onClick={handleSavePrompts} disabled={isSaving}>
               <Save className="mr-2 h-4 w-4" />
-              {isSaving ? "Sauvegarde..." : "Sauvegarder les Modifications"}
+              {isSaving ? "Sauvegarde..." : "Sauvegarder (localement)"}
             </Button>
             <Button variant="outline" onClick={handleResetPrompts}>
               <RotateCcw className="mr-2 h-4 w-4" />
-              Réinitialiser aux Défauts
+              Réinitialiser (depuis public/prompts.json)
             </Button>
           </div>
 
