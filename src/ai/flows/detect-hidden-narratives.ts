@@ -22,7 +22,7 @@ export type DetectHiddenNarrativesInput = z.infer<typeof DetectHiddenNarrativesI
 const DetectHiddenNarrativesOutputSchema = z.object({
   hiddenNarratives: z
     .string()
-    .describe('The detailed hidden narratives detected in the text, from a paranoid perspective, presented in a comprehensive manner.'),
+    .describe('The detailed, comprehensive, and substantial hidden narratives detected in the text, from a paranoid perspective, presented in a well-explained manner.'),
 });
 export type DetectHiddenNarrativesOutput = z.infer<typeof DetectHiddenNarrativesOutputSchema>;
 
@@ -40,7 +40,7 @@ const detectHiddenNarrativesPrompt = ai.definePrompt({
 
   Analyze the text from a perspective that assumes there are hidden meanings, agendas, and potential manipulations at play. Identify any underlying narratives or intentions that are not explicitly stated but may be implied through the language used, the context provided, or the subtext detectable through careful scrutiny.
 
-  Present your findings as a detailed and comprehensive report of the detected hidden narratives. Ensure your report is thorough and well-explained.
+  Present your findings as a detailed, comprehensive, and substantial report of the detected hidden narratives. Ensure your report is thorough, well-explained, and provides significant depth.
   `,
 });
 
@@ -55,3 +55,4 @@ const detectHiddenNarrativesFlow = ai.defineFlow(
     return output!;
   }
 );
+
