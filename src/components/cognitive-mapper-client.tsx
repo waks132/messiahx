@@ -76,16 +76,16 @@ export default function CognitiveMapperClient() {
 
   const [activeTab, setActiveTab] = useState<string>("input");
   const { toast } = useToast();
-
+  
+  // Effect to prime reformulationInputText from inputText if it's empty
+  // or if inputText changes and reformulationInputText was based on the previous inputText.
   useEffect(() => {
-    // Prime reformulation input only if it's empty and main input text is available.
-    // This prevents overwriting user's specific text in reformulation tab.
-    if (inputText && reformulationInputText.trim() === "") {
-      setReformulationInputText(inputText);
+    if (inputText.trim() !== "") {
+      if (reformulationInputText.trim() === "" || reformulationInputText === inputText) {
+        setReformulationInputText(inputText);
+      }
     }
-    // Research query is independent and should not be auto-filled from main input here
-    // to avoid confusion and ensure user explicitly enters research terms.
-  }, [inputText]); // Only depend on inputText for this specific priming logic
+  }, [inputText]); // Removed reformulationInputText from deps to avoid loop on its own change
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
@@ -98,15 +98,10 @@ export default function CognitiveMapperClient() {
     setParanoidReadingResult(null);
     setClassificationResult(initialClassificationResult); 
     
-    // Do not automatically clear reformulation input or other search results here
-    // setReformulationResult(null); 
-    // setContextualSearchResult(null);
-    // setManipulationSearchResult(null);
     // Prime reformulation input if it's currently empty
     if (reformulationInputText.trim() === "" && inputText.trim() !== "") {
       setReformulationInputText(inputText);
     }
-
 
     try {
       const results = await analyzeTextAction({ text: inputText });
@@ -202,7 +197,7 @@ export default function CognitiveMapperClient() {
     }
   };
 
-  const handleReformulate = async () => { // Takes no argument, uses state
+  const handleReformulate = async () => { 
     if (!reformulationInputText.trim()) {
       toast({ title: "Erreur", description: "Le champ de texte pour la reformulation est vide.", variant: "destructive" });
       return;
@@ -238,7 +233,7 @@ export default function CognitiveMapperClient() {
       if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error:") || result.researchResult.startsWith("The model did not provide")) {
         toast({ title: "Erreur de Recherche Contextuelle", description: result.researchResult, variant: "destructive", duration: 8000 });
       } else {
-        toast({ title: "Recherche Contextuelle Terminée", description: `Résultat disponible. Voir ci-dessous.`, duration: 5000 });
+        toast({ title: "Recherche Contextuelle Terminée", description: `Résultat disponible.`, duration: 5000 });
       }
     } catch (error: any) {
       toast({ title: "Erreur de Recherche Contextuelle", description: error.message || "Une erreur inattendue.", variant: "destructive", duration: 8000 });
@@ -261,7 +256,7 @@ export default function CognitiveMapperClient() {
        if (result.manipulationInsights.startsWith("Failed") || result.manipulationInsights.startsWith("Error:") || result.manipulationInsights.startsWith("The model did not provide")) {
         toast({ title: "Erreur Analyse Manipulation", description: result.manipulationInsights, variant: "destructive", duration: 8000 });
       } else {
-        toast({ title: "Analyse de Manipulation Terminée", description: `Résultat disponible. Voir ci-dessous.`, duration: 5000 });
+        toast({ title: "Analyse de Manipulation Terminée", description: `Résultat disponible.`, duration: 5000 });
       }
     } catch (error: any) {
       toast({ title: "Erreur Analyse Manipulation", description: error.message || "Une erreur inattendue.", variant: "destructive", duration: 8000 });
@@ -386,6 +381,7 @@ export default function CognitiveMapperClient() {
             selectedReformulationStyle={selectedReformulationStyle}
             setSelectedReformulationStyle={setSelectedReformulationStyle}
             reformulationResult={reformulationResult}
+            setReformulationResult={setReformulationResult}
             isReformulating={isReformulating}
             handleReformulate={handleReformulate} 
           />
@@ -405,4 +401,6 @@ export default function CognitiveMapperClient() {
     </div>
   );
 }
+    
+
     
