@@ -22,7 +22,9 @@ import {
   classifyCognitiveCategoriesAction,
   reformulateTextAction,
   researchContextualAction,
-  researchManipulationAction
+  researchManipulationAction,
+  generatePersonaProfileAction,
+  chatWithPersonaAction,
 } from "@/app/actions";
 import type { AnalyzeTextOutput } from '@/ai/flows/analyze-text-for-manipulation';
 import type { GenerateCriticalSummaryOutput } from '@/ai/flows/generate-critical-summary';
@@ -32,10 +34,15 @@ import type { ReformulateTextInput, ReformulateTextOutput } from '@/ai/flows/ref
 import type { ResearchContextualInput, ResearchContextualOutput } from '@/ai/flows/research-contextual-flow';
 import type { ResearchManipulationInput, ResearchManipulationOutput } from '@/ai/flows/research-manipulation-flow';
 import type { WebSearchOutput } from '@/ai/tools/web-search-tool';
+import type { GeneratePersonaProfileOutput } from '@/ai/flows/generate-persona-profile-flow';
+import type { ChatMessage, ChatWithPersonaInput } from '@/ai/flows/chat-with-persona-flow';
+import { PersonaGeneratorPanel } from '@/components/persona-lab/persona-generator-panel';
+import { PersonaChatPanel } from '@/components/persona-lab/persona-chat-panel';
+
 
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Quote, Drama, BrainCircuit, SearchCheck, PenTool, Settings, Telescope, MessageSquareText, Languages, Copy, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react';
+import { FileText, Quote, Drama, BrainCircuit, SearchCheck, PenTool, Settings, Telescope, MessageSquareText, Languages, Copy, AlertCircle, CheckCircle2, HelpCircle, BotMessageSquareIcon } from 'lucide-react';
 
 const initialAnalysisResults: AnalyzeTextOutput = {
   summary: "",
@@ -53,7 +60,6 @@ const initialClassificationResult: ClassifyCognitiveCategoriesOutput = {
   }
 };
 
-// Moved from ReformulationPanel to be accessible for state initialization and new styles
 const reformulationStyles = [
   { value: "neutral", label: "Neutre et Objectif" },
   { value: "messianic", label: "Messianique / Prophétique" },
@@ -72,6 +78,7 @@ interface UILabels {
   reformulationTab: string;
   paranoidTab: string;
   configTab: string;
+  personaLabTab: string; // New
   languageLabel: string;
   contextualSearchTitle: string;
   manipulationSearchTitle: string;
@@ -107,6 +114,32 @@ interface UILabels {
   webSearchStatusPlaceholder: string;
   copyButton: string;
   noResult: string;
+  // Persona Lab Labels
+  personaLabGeneratorTitle: string;
+  personaLabGeneratorDescription: string;
+  personaNameLabel: string;
+  personaNamePlaceholder: string;
+  personaDescriptionLabel: string;
+  personaDescriptionPlaceholder: string;
+  generatePersonaButton: string;
+  generatingPersonaButton: string;
+  generatedProfileTitle: string;
+  downloadProfileButton: string;
+  copyProfileButton: string;
+  noProfileGenerated: string;
+  profileGeneratedSuccess: string;
+  profileGenerationError: string;
+  personaLabChatTitle: string;
+  personaLabChatDescription: string;
+  personaLabChatNoActivePersona: string;
+  chatWithPersonaPlaceholder: string;
+  sendMessageButton: string;
+  sendingMessageButton: string;
+  youLabel: string;
+  personaChatError: string;
+  emptyPersonaNameError: string;
+  emptyPersonaDescriptionError: string;
+
 }
 
 const uiContent: Record<string, UILabels> = {
@@ -118,6 +151,7 @@ const uiContent: Record<string, UILabels> = {
     reformulationTab: "Reformulation",
     paranoidTab: "Lecture Paranoïaque",
     configTab: "Prompts",
+    personaLabTab: "Persona Lab",
     languageLabel: "Langue de l'interface et de l'IA:",
     contextualSearchTitle: "Résultat de la Recherche Contextuelle",
     manipulationSearchTitle: "Résultat de l'Analyse de Manipulation",
@@ -153,6 +187,30 @@ const uiContent: Record<string, UILabels> = {
     webSearchStatusPlaceholder: "Recherche Web (Placeholder)",
     copyButton: "Copier",
     noResult: "Aucun résultat.",
+    personaLabGeneratorTitle: "Générateur de Profil Persona IA",
+    personaLabGeneratorDescription: "Définissez et générez des profils structurés pour vos personas IA.",
+    personaNameLabel: "Nom du Persona :",
+    personaNamePlaceholder: "Ex: Analyste Prudent",
+    personaDescriptionLabel: "Description détaillée du Persona :",
+    personaDescriptionPlaceholder: "Décrivez son rôle, ses valeurs, son style, ses capacités...",
+    generatePersonaButton: "Générer le Profil",
+    generatingPersonaButton: "Génération...",
+    generatedProfileTitle: "Profil Généré",
+    downloadProfileButton: "Télécharger",
+    copyProfileButton: "Copier",
+    noProfileGenerated: "Aucun profil généré pour le moment.",
+    profileGeneratedSuccess: "Profil de persona généré avec succès !",
+    profileGenerationError: "Erreur lors de la génération du profil.",
+    personaLabChatTitle: "Chat avec Persona",
+    personaLabChatDescription: "Interagissez avec le persona IA actif.",
+    personaLabChatNoActivePersona: "Veuillez d'abord générer ou sélectionner un persona actif pour discuter.",
+    chatWithPersonaPlaceholder: "Envoyer un message à ",
+    sendMessageButton: "Envoyer",
+    sendingMessageButton: "Envoi...",
+    youLabel: "Vous",
+    personaChatError: "Erreur de Chat Persona",
+    emptyPersonaNameError: "Le nom du persona ne peut pas être vide.",
+    emptyPersonaDescriptionError: "La description du persona ne peut pas être vide.",
   },
   en: {
     inputTab: "Input & Research",
@@ -162,6 +220,7 @@ const uiContent: Record<string, UILabels> = {
     reformulationTab: "Reformulation",
     paranoidTab: "Paranoid Reading",
     configTab: "Prompts",
+    personaLabTab: "Persona Lab",
     languageLabel: "Interface and AI Language:",
     contextualSearchTitle: "Contextual Research Result",
     manipulationSearchTitle: "Manipulation Analysis Result",
@@ -197,6 +256,30 @@ const uiContent: Record<string, UILabels> = {
     webSearchStatusPlaceholder: "Web Search (Placeholder)",
     copyButton: "Copy",
     noResult: "No result.",
+    personaLabGeneratorTitle: "AI Persona Profile Generator",
+    personaLabGeneratorDescription: "Define and generate structured profiles for your AI personas.",
+    personaNameLabel: "Persona Name:",
+    personaNamePlaceholder: "E.g., Cautious Analyst",
+    personaDescriptionLabel: "Detailed Persona Description:",
+    personaDescriptionPlaceholder: "Describe its role, values, style, capabilities...",
+    generatePersonaButton: "Generate Profile",
+    generatingPersonaButton: "Generating...",
+    generatedProfileTitle: "Generated Profile",
+    downloadProfileButton: "Download",
+    copyProfileButton: "Copy",
+    noProfileGenerated: "No profile generated yet.",
+    profileGeneratedSuccess: "Persona profile generated successfully!",
+    profileGenerationError: "Error generating persona profile.",
+    personaLabChatTitle: "Chat with Persona",
+    personaLabChatDescription: "Interact with the active AI persona.",
+    personaLabChatNoActivePersona: "Please generate or select an active persona first to chat.",
+    chatWithPersonaPlaceholder: "Send a message to ",
+    sendMessageButton: "Send",
+    sendingMessageButton: "Sending...",
+    youLabel: "You",
+    personaChatError: "Persona Chat Error",
+    emptyPersonaNameError: "Persona name cannot be empty.",
+    emptyPersonaDescriptionError: "Persona description cannot be empty.",
   },
 };
 
@@ -262,6 +345,16 @@ export default function CognitiveMapperClient() {
   const [isReformulating, setIsReformulating] = useState<boolean>(false);
   const [isSearchingContextual, setIsSearchingContextual] = useState<boolean>(false);
   const [isSearchingManipulation, setIsSearchingManipulation] = useState<boolean>(false);
+
+  // Persona Lab State
+  const [personaLabNameInput, setPersonaLabNameInput] = useState<string>("");
+  const [personaLabDescriptionInput, setPersonaLabDescriptionInput] = useState<string>("");
+  const [generatedPersonaProfile, setGeneratedPersonaProfile] = useState<GeneratePersonaProfileOutput | null>(null);
+  const [activePersonaForChat, setActivePersonaForChat] = useState<GeneratePersonaProfileOutput['personaProfile'] | null>(null);
+  const [personaChatMessages, setPersonaChatMessages] = useState<ChatMessage[]>([]);
+  const [isGeneratingPersona, setIsGeneratingPersona] = useState<boolean>(false);
+  const [isSendingPersonaMessage, setIsSendingPersonaMessage] = useState<boolean>(false);
+
 
   const [activeTab, setActiveTab] = useState<string>("input");
   
@@ -479,6 +572,75 @@ export default function CognitiveMapperClient() {
     }
   };
 
+  // Persona Lab Handlers
+  const handleGeneratePersonaForLab = async () => {
+    if (!personaLabNameInput.trim()) {
+      toast({ title: labels.errorToastTitle, description: labels.emptyPersonaNameError, variant: "destructive" });
+      return;
+    }
+    if (!personaLabDescriptionInput.trim()) {
+      toast({ title: labels.errorToastTitle, description: labels.emptyPersonaDescriptionError, variant: "destructive" });
+      return;
+    }
+    setIsGeneratingPersona(true);
+    setGeneratedPersonaProfile(null);
+    setActivePersonaForChat(null);
+    setPersonaChatMessages([]);
+    try {
+      const result = await generatePersonaProfileAction({
+        personaName: personaLabNameInput,
+        personaDescription: personaLabDescriptionInput,
+        language: currentLanguage,
+      });
+      setGeneratedPersonaProfile(result);
+      if (result.personaProfile.tagline.startsWith("Failed") || result.personaProfile.tagline.startsWith("Échec")) {
+        toast({ title: labels.profileGenerationError, description: result.personaProfile.tagline, variant: "destructive" });
+      } else {
+        toast({ title: labels.profileGeneratedSuccess });
+        setActivePersonaForChat(result.personaProfile); // Activate for chat
+      }
+    } catch (error: any) {
+      toast({ title: labels.profileGenerationError, description: error.message || "Erreur inconnue", variant: "destructive" });
+    } finally {
+      setIsGeneratingPersona(false);
+    }
+  };
+
+  const handleSendPersonaChatMessage = async (message: string) => {
+    if (!activePersonaForChat) {
+      toast({ title: labels.personaChatError, description: labels.personaLabChatNoActivePersona, variant: "destructive" });
+      return;
+    }
+    setIsSendingPersonaMessage(true);
+    const newUserMessage: ChatMessage = { role: 'user', content: message };
+    setPersonaChatMessages(prev => [...prev, newUserMessage]);
+
+    try {
+      const chatInput: ChatWithPersonaInput = {
+        personaProfile: activePersonaForChat,
+        userMessage: message,
+        chatHistory: personaChatMessages, // send previous messages for context
+        language: currentLanguage,
+      };
+      const result = await chatWithPersonaAction(chatInput);
+      
+      if (result.personaResponse.startsWith("Failed") || result.personaResponse.startsWith("Échec")) {
+         toast({ title: labels.personaChatError, description: result.personaResponse, variant: "destructive" });
+         // Optionally remove the user's message or add an error message from the bot
+      } else {
+        const personaResponseMessage: ChatMessage = { role: 'model', content: result.personaResponse };
+        setPersonaChatMessages(prev => [...prev, personaResponseMessage]);
+      }
+    } catch (error: any) {
+      toast({ title: labels.personaChatError, description: error.message || "Erreur inconnue", variant: "destructive" });
+       const errorResponseMessage: ChatMessage = { role: 'model', content: `${currentLanguage === 'fr' ? 'Désolé, je ne peux pas répondre pour le moment.' : 'Sorry, I cannot respond right now.'}` };
+       setPersonaChatMessages(prev => [...prev, errorResponseMessage]);
+    } finally {
+      setIsSendingPersonaMessage(false);
+    }
+  };
+
+
   const isMainAnalysisTextAvailable = !!inputText.trim();
   const isAnalysisDone = !!analysisResults && !analysisResults.summary.startsWith("Failed") && !analysisResults.summary.startsWith("Échec");
   const isReformulationTextAvailable = !!reformulationInputText.trim();
@@ -504,7 +666,7 @@ export default function CognitiveMapperClient() {
         </div>
       </div>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 mb-6 bg-card/80 backdrop-blur-sm p-1.5 rounded-lg shadow-md">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 bg-card/80 backdrop-blur-sm p-1.5 rounded-lg shadow-md">
           <TabsTrigger value="input" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <FileText className="mr-2 h-4 w-4" /> {labels.inputTab}
           </TabsTrigger>
@@ -522,6 +684,9 @@ export default function CognitiveMapperClient() {
           </TabsTrigger>
           <TabsTrigger value="paranoid" disabled={!isMainAnalysisTextAvailable && !isGeneratingParanoid} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Drama className="mr-2 h-4 w-4" /> {labels.paranoidTab}
+          </TabsTrigger>
+           <TabsTrigger value="persona-lab" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
+            <BotMessageSquareIcon className="mr-2 h-4 w-4" /> {labels.personaLabTab}
           </TabsTrigger>
           <TabsTrigger value="config" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Settings className="mr-2 h-4 w-4" /> {labels.configTab}
@@ -634,6 +799,34 @@ export default function CognitiveMapperClient() {
             isBaseTextAvailable={isMainAnalysisTextAvailable}
             currentLanguage={currentLanguage}
           />
+        </TabsContent>
+        <TabsContent value="persona-lab">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <PersonaGeneratorPanel
+              personaNameInput={personaLabNameInput}
+              setPersonaNameInput={setPersonaLabNameInput}
+              personaDescriptionInput={personaLabDescriptionInput}
+              setPersonaDescriptionInput={setPersonaLabDescriptionInput}
+              generatedPersonaProfile={generatedPersonaProfile}
+              handleGeneratePersonaProfile={handleGeneratePersonaForLab}
+              isGeneratingPersona={isGeneratingPersona}
+              currentLanguage={currentLanguage}
+              labels={labels}
+              onPersonaGenerated={(profile) => {
+                setGeneratedPersonaProfile(profile);
+                setActivePersonaForChat(profile.personaProfile);
+                setPersonaChatMessages([]); // Clear chat history for new persona
+              }}
+            />
+            <PersonaChatPanel
+              activePersona={activePersonaForChat}
+              chatMessages={personaChatMessages}
+              handleSendMessage={handleSendPersonaChatMessage}
+              isSendingMessage={isSendingPersonaMessage}
+              currentLanguage={currentLanguage}
+              labels={labels}
+            />
+          </div>
         </TabsContent>
         <TabsContent value="config">
           <PromptConfigPage />

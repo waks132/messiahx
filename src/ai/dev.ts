@@ -9,6 +9,7 @@ import '@/ai/flows/classify-cognitive-categories.ts';
 import '@/ai/flows/reformulate-text.ts';
 import '@/ai/flows/research-contextual-flow.ts';
 import '@/ai/flows/research-manipulation-flow.ts';
-import '@/ai/flows/generate-persona-profile-flow.ts'; // Added new flow
+import '@/ai/flows/generate-persona-profile-flow.ts';
+import '@/ai/flows/chat-with-persona-flow.ts'; // Added new flow
 import '@/ai/tools/web-search-tool.ts'; // Import the tool so Genkit recognizes it
     

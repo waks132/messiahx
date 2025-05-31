@@ -9,6 +9,7 @@ import { reformulateText as reformulateTextFlow, type ReformulateTextInput, type
 import { researchContextual as researchContextualFlow, type ResearchContextualInput, type ResearchContextualOutput } from '@/ai/flows/research-contextual-flow';
 import { researchManipulation as researchManipulationFlow, type ResearchManipulationInput, type ResearchManipulationOutput } from '@/ai/flows/research-manipulation-flow';
 import { generatePersonaProfile as generatePersonaProfileFlow, type GeneratePersonaProfileInput, type GeneratePersonaProfileOutput } from '@/ai/flows/generate-persona-profile-flow';
+import { chatWithPersona as chatWithPersonaFlow, type ChatWithPersonaInput, type ChatWithPersonaOutput } from '@/ai/flows/chat-with-persona-flow';
 
 
 export async function analyzeTextAction(input: AnalyzeTextInput): Promise<AnalyzeTextOutput> {
@@ -205,5 +206,26 @@ export async function generatePersonaProfileAction(input: GeneratePersonaProfile
         }
       }
     };
+  }
+}
+
+
+export async function chatWithPersonaAction(input: ChatWithPersonaInput): Promise<ChatWithPersonaOutput> {
+  try {
+    const result = await chatWithPersonaFlow(input);
+    const defaultError = input.language === 'fr'
+        ? "Échec de la conversation : Réponse invalide du persona."
+        : "Failed to chat: Invalid response from persona.";
+    if (!result || typeof result.personaResponse !== 'string') {
+      console.error("Invalid result from chatWithPersonaFlow:", result);
+      return { personaResponse: defaultError };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error in chatWithPersonaAction:", error);
+    const errorMessage = input.language === 'fr'
+        ? `Échec de la conversation : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+        : `Failed to chat: ${error instanceof Error ? error.message : "Unknown error"}`;
+    return { personaResponse: errorMessage };
   }
 }
