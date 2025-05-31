@@ -8,10 +8,24 @@ import { classifyCognitiveCategories as classifyCognitiveCategoriesFlow, type Cl
 
 export async function analyzeTextAction(input: AnalyzeTextInput): Promise<AnalyzeTextOutput> {
   try {
-    return await analyzeTextForManipulationFlow(input);
+    const result = await analyzeTextForManipulationFlow(input);
+    // Ensure all arrays are present, even if empty, to prevent downstream errors
+    return {
+      summary: result.summary || "Analysis summary not available.",
+      rhetoricalTechniques: result.rhetoricalTechniques || [],
+      cognitiveBiases: result.cognitiveBiases || [],
+      unverifiableFacts: result.unverifiableFacts || [],
+    };
   } catch (error) {
     console.error("Error in analyzeTextAction:", error);
-    throw new Error("Failed to analyze text. Please try again.");
+    // Return a structured error object or a default safe AnalyzeTextOutput
+    return {
+      summary: "Failed to analyze text. Please try again.",
+      rhetoricalTechniques: [],
+      cognitiveBiases: [],
+      unverifiableFacts: [],
+      // You could add an error field here if the AnalyzeTextOutput schema supported it
+    };
   }
 }
 
@@ -21,7 +35,7 @@ export async function generateCriticalSummaryAction(input: GenerateCriticalSumma
   } catch (error)
   {
     console.error("Error in generateCriticalSummaryAction:", error);
-    throw new Error("Failed to generate critical summary. Please try again.");
+    return { summary: "Failed to generate critical summary. Please try again." };
   }
 }
 
@@ -30,19 +44,27 @@ export async function detectHiddenNarrativesAction(input: DetectHiddenNarratives
     return await detectHiddenNarrativesFlow(input);
   } catch (error) {
     console.error("Error in detectHiddenNarrativesAction:", error);
-    throw new Error("Failed to detect hidden narratives. Please try again.");
+    return { hiddenNarratives: "Failed to detect hidden narratives. Please try again." };
   }
 }
 
 export async function classifyCognitiveCategoriesAction(input: ClassifyCognitiveCategoriesInput): Promise<ClassifyCognitiveCategoriesOutput> {
   try {
-    return await classifyCognitiveCategoriesFlow(input);
+    const result = await classifyCognitiveCategoriesFlow(input);
+     return {
+      classifiedCategories: result.classifiedCategories || [],
+      overallClassification: result.overallClassification || { type: 'other', score: 0, reasoning: 'Classification data incomplete.' }
+    };
   } catch (error) {
     console.error("Error in classifyCognitiveCategoriesAction:", error);
-    // It's good to provide a more specific error message if possible, or rethrow a custom error.
+    let errorMessage = "Failed to classify cognitive categories. An unknown error occurred.";
     if (error instanceof Error) {
-       throw new Error(`Failed to classify cognitive categories: ${error.message}`);
+       errorMessage = `Failed to classify cognitive categories: ${error.message}`;
     }
-    throw new Error("Failed to classify cognitive categories. An unknown error occurred.");
+    // Return a default safe ClassifyCognitiveCategoriesOutput
+    return {
+      classifiedCategories: [],
+      overallClassification: { type: 'other', score: 0, reasoning: errorMessage }
+    };
   }
 }
