@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb, Info, Download, Copy } from "lucide-react";
 import { CognitiveMapChart } from "@/components/charts/cognitive-map-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { AnalyzeTextOutput } from "@/ai/flows/analyze-text-for-manipulation";
@@ -66,7 +65,7 @@ const panelLabels: Record<string, Record<string, string>> = {
   }
 };
 
-const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassName, tooltipText, currentLanguage, isUnverifiableFact = false }: { title: string; items: string[]; icon: React.ReactNode; badgeVariant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info", badgeClassName?: string, tooltipText?: string, currentLanguage: string, isUnverifiableFact?: boolean }) => {
+const ItemList = ({ title, items, icon, itemClassName, tooltipText, currentLanguage, isUnverifiableFact = false }: { title: string; items: string[]; icon: React.ReactNode; itemClassName?: string, tooltipText?: string, currentLanguage: string, isUnverifiableFact?: boolean }) => {
   const labels = panelLabels[currentLanguage] || panelLabels.fr;
 
   const parseFact = (item: string) => {
@@ -99,8 +98,8 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
       </CardHeader>
       <CardContent>
         {items && items.length > 0 ? (
-          <ScrollArea className="h-40 pr-3">
-            <ul className="space-y-2">
+          <ScrollArea className="h-48 pr-3"> {/* Increased height */}
+            <ul className="space-y-2.5"> {/* Increased spacing */}
               {items.map((item, index) => {
                 if (isUnverifiableFact) {
                   const { statement, justification } = parseFact(item);
@@ -109,9 +108,9 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
                        <TooltipProvider>
                         <Tooltip delayDuration={100}>
                           <TooltipTrigger asChild>
-                            <div className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow rounded-md ${badgeClassName}`}>
-                              <p><strong className="font-semibold">{labels.factStatement}:</strong> {statement}</p>
-                              {justification && <p className="text-xs italic text-muted-foreground mt-1"><strong className="font-medium">{labels.factJustification}:</strong> {justification}</p>}
+                            <div className={`whitespace-normal p-2.5 text-xs shadow-md hover:shadow-lg transition-shadow rounded-lg border ${itemClassName} bg-background`}>
+                              <p><strong className="font-semibold text-foreground/90">{labels.factStatement}:</strong> {statement}</p>
+                              {justification && <p className="text-xs italic text-muted-foreground mt-1.5 pt-1.5 border-t border-border/30"><strong className="font-medium">{labels.factJustification}:</strong> {justification}</p>}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent className="max-w-md bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
@@ -129,9 +128,9 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
                     <TooltipProvider>
                       <Tooltip delayDuration={100}>
                         <TooltipTrigger asChild>
-                          <Badge variant={badgeVariant} className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow ${badgeClassName}`}>
+                          <div className={`whitespace-normal py-2 px-3 text-xs shadow-md hover:shadow-lg transition-shadow rounded-lg border ${itemClassName} bg-background text-foreground/90`}>
                             {item}
-                          </Badge>
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
                           <p className="font-semibold">{title.slice(0, -1)}:</p>
@@ -266,7 +265,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
             <Lightbulb className="h-5 w-5" />
             {labels.summaryTitle}
           </h3>
-          <ScrollArea className="h-auto max-h-60 pr-3">
+          <ScrollArea className="h-auto max-h-72 pr-3"> {/* Increased max-height */}
             <p className="text-foreground/90 leading-relaxed bg-muted/20 p-4 rounded-md shadow-inner text-sm whitespace-pre-wrap">
               {analysisResults.summary || labels.noSummary}
             </p>
@@ -279,8 +278,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
           title={labels.rhetoricalTechniques}
           items={analysisResults.rhetoricalTechniques || []}
           icon={<BookText className="h-5 w-5" />}
-          badgeVariant="info"
-          badgeClassName="bg-gradient-to-br from-sky-500 to-cyan-400 text-white"
+          itemClassName="border-sky-500/50"
           tooltipText={labels.rhetoricalTooltip}
           currentLanguage={currentLanguage}
         />
@@ -288,8 +286,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
           title={labels.cognitiveBiases} 
           items={analysisResults.cognitiveBiases || []}
           icon={<Eye className="h-5 w-5" />}
-          badgeVariant="warning"
-          badgeClassName="bg-gradient-to-br from-amber-500 to-yellow-400 text-black"
+          itemClassName="border-yellow-500/50"
           tooltipText={labels.cognitiveTooltip}
           currentLanguage={currentLanguage}
         />
@@ -297,8 +294,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
           title={labels.unverifiableFacts}
           items={analysisResults.unverifiableFacts || []}
           icon={<ShieldAlert className="h-5 w-5" />}
-          badgeVariant="destructive"
-          badgeClassName="bg-gradient-to-br from-red-500 to-orange-400 text-white"
+          itemClassName="border-red-500/50"
           tooltipText={labels.unverifiableTooltip}
           currentLanguage={currentLanguage}
           isUnverifiableFact={true}

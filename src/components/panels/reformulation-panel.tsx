@@ -240,7 +240,7 @@ export function ReformulationPanel({
                 <CardTitle className="text-lg text-accent">{labels.originalTextTitle}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-auto max-h-60 min-h-[80px] pr-3">
+                <ScrollArea className="h-48 min-h-[80px] pr-3"> {/* Adjusted height */}
                     <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap text-sm p-2 bg-muted/10 rounded">{reformulationInputText || labels.noOriginalText}</p>
                 </ScrollArea>
               </CardContent>
@@ -265,7 +265,7 @@ export function ReformulationPanel({
                 </div>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-auto max-h-[500px] min-h-[120px] pr-3">
+                <ScrollArea className="h-96 min-h-[120px] pr-3"> {/* Adjusted height */}
                   {reformulationResult.reformulatedText.startsWith(labels.reformulationErrorPrefix) || reformulationResult.reformulatedText.startsWith(labels.modelDidNotProvidePrefix) || reformulationResult.reformulatedText.startsWith(labels.failedToReformulatePrefix) ? (
                     <p className="text-destructive leading-relaxed whitespace-pre-wrap p-4 bg-destructive/10 rounded-md">
                       {reformulationResult.reformulatedText}
