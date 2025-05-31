@@ -36,7 +36,7 @@ const analyzeTextPrompt = ai.definePrompt({
   output: {schema: AnalyzeTextOutputSchema},
   prompt: `You are an expert in discourse analysis. Your task is to identify potential discursive elements in the provided text.
 List them factually and neutrally. The context, intent, and manipulative intensity will be assessed in a subsequent step.
-The input text is in {{language}} and your response should also be in {{language}}.
+**REGARDLESS of the input text's language, YOUR ENTIRE RESPONSE, including all summaries, lists, and explanations, MUST be in {{language}}.**
 
 Text: {{{text}}}
 
