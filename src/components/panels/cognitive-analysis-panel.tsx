@@ -251,11 +251,11 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
             <CardDescription>{labels.description}</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(analysisResults?.summary)} disabled={!analysisResults?.summary}>
+            <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(analysisResults?.summary)} disabled={!analysisResults?.summary || hasFailed}>
               <Copy className="mr-2 h-4 w-4" />
               {labels.copySummaryButton}
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDownloadAnalysis} disabled={!analysisResults}>
+            <Button variant="outline" size="sm" onClick={handleDownloadAnalysis} disabled={!analysisResults || hasFailed}>
               <Download className="mr-2 h-4 w-4" />
               {labels.downloadButton}
             </Button>
@@ -305,7 +305,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
         />
       </div>
       
-      <CognitiveMapChart analysisResults={analysisResults} />
+      <CognitiveMapChart analysisResults={analysisResults} currentLanguage={currentLanguage} />
       
     </div>
   );

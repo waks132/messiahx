@@ -8,13 +8,14 @@ import type { AnalyzeTextOutput } from "@/ai/flows/analyze-text-for-manipulation
 
 interface CognitiveMapChartProps {
   analysisResults: AnalyzeTextOutput | null;
+  currentLanguage: string;
 }
 
 interface ChartDataItem {
   name: string;
   count: number;
-  fill: string; // Keep fill for potential direct use or as a fallback
-  colorClass: string; // For Tailwind CSS gradient
+  fill: string; 
+  colorClass: string; 
 }
 
 const chartColors = [
@@ -24,24 +25,46 @@ const chartColors = [
 ];
 
 const gradientClasses = [
-  "fill-gradient-to-br from-purple-500 to-pink-500", // For Rhetorical Techniques
-  "fill-gradient-to-br from-blue-500 to-teal-500",   // For Cognitive Biases
-  "fill-gradient-to-br from-red-500 to-orange-500"    // For Unverifiable Facts
+  "fill-gradient-to-br from-purple-500 to-pink-500", 
+  "fill-gradient-to-br from-blue-500 to-teal-500",   
+  "fill-gradient-to-br from-red-500 to-orange-500"    
 ];
 
+const chartLabels: Record<string, Record<string, string>> = {
+  fr: {
+    rhetoricalTechniques: "Techniques Rhétoriques",
+    cognitiveBiases: "Biais Cognitifs",
+    unverifiableFacts: "Faits Invérifiables",
+    tooltipCountSuffix: "trouvé(s)",
+    title: "Aperçu des Éléments Discursifs",
+    description: "Visualisation quantitative des types d'éléments identifiés dans le texte.",
+    noData: "Aucun élément spécifique détecté pour la cartographie quantitative."
+  },
+  en: {
+    rhetoricalTechniques: "Rhetorical Techniques",
+    cognitiveBiases: "Cognitive Biases",
+    unverifiableFacts: "Unverifiable Facts",
+    tooltipCountSuffix: "found",
+    title: "Overview of Discursive Elements",
+    description: "Quantitative visualization of the types of elements identified in the text.",
+    noData: "No specific elements detected for quantitative mapping."
+  }
+};
 
-export function CognitiveMapChart({ analysisResults }: CognitiveMapChartProps) {
+
+export function CognitiveMapChart({ analysisResults, currentLanguage }: CognitiveMapChartProps) {
+  const labels = chartLabels[currentLanguage] || chartLabels.fr;
+
   if (!analysisResults) {
     return null;
   }
 
   const dataMap = [
-    { name: "Techniques Rhétoriques", count: (analysisResults.rhetoricalTechniques || []).length, colorClass: gradientClasses[0], fill: chartColors[0] },
-    { name: "Biais Cognitifs", count: (analysisResults.cognitiveBiases || []).length, colorClass: gradientClasses[1], fill: chartColors[1] },
-    { name: "Faits Invérifiables", count: (analysisResults.unverifiableFacts || []).length, colorClass: gradientClasses[2], fill: chartColors[2] },
+    { name: labels.rhetoricalTechniques, count: (analysisResults.rhetoricalTechniques || []).length, colorClass: gradientClasses[0], fill: chartColors[0] },
+    { name: labels.cognitiveBiases, count: (analysisResults.cognitiveBiases || []).length, colorClass: gradientClasses[1], fill: chartColors[1] },
+    { name: labels.unverifiableFacts, count: (analysisResults.unverifiableFacts || []).length, colorClass: gradientClasses[2], fill: chartColors[2] },
   ];
   
-  // Filter out items with zero count to make the chart cleaner
   const chartData = dataMap.filter(item => item.count > 0);
 
 
@@ -50,13 +73,13 @@ export function CognitiveMapChart({ analysisResults }: CognitiveMapChartProps) {
       <CardHeader>
         <CardTitle className="font-headline text-2xl flex items-center gap-2 text-primary">
           <ScanText className="h-6 w-6" />
-          Aperçu des Éléments Discursifs
+          {labels.title}
         </CardTitle>
-        <CardDescription>Visualisation quantitative des types d'éléments identifiés dans le texte.</CardDescription>
+        <CardDescription>{labels.description}</CardDescription>
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8 italic">Aucun élément spécifique détecté pour la cartographie quantitative.</p>
+          <p className="text-center text-muted-foreground py-8 italic">{labels.noData}</p>
         ) : (
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -73,12 +96,11 @@ export function CognitiveMapChart({ analysisResults }: CognitiveMapChartProps) {
                     color: "hsl(var(--foreground))",
                     boxShadow: "0 4px 12px hsla(var(--foreground), 0.1)"
                   }}
-                  formatter={(value, name, props) => [`${value} trouvé(s)`, props.payload.name]}
+                  formatter={(value, name, props) => [`${value} ${labels.tooltipCountSuffix}`, props.payload.name]}
                   labelFormatter={(label) => ""}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]} barSize={35}>
                     {chartData.map((entry, index) => (
-                        // The 'fill' attribute is directly used by Recharts cells
                         <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                 </Bar>
