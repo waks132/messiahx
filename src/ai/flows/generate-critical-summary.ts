@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -23,7 +24,7 @@ const GenerateCriticalSummaryInputSchema = z.object({
 export type GenerateCriticalSummaryInput = z.infer<typeof GenerateCriticalSummaryInputSchema>;
 
 const GenerateCriticalSummaryOutputSchema = z.object({
-  summary: z.string().describe('The critical summary of the analyzed text.'),
+  summary: z.string().describe('The detailed critical summary of the analyzed text.'),
 });
 export type GenerateCriticalSummaryOutput = z.infer<typeof GenerateCriticalSummaryOutputSchema>;
 
@@ -39,10 +40,12 @@ const prompt = ai.definePrompt({
   output: {schema: GenerateCriticalSummaryOutputSchema},
   prompt: `You are an expert at critically analyzing text and identifying fallacies and biases.
 
-  Based on the analyzed text provided, generate a critical summary highlighting the presence of fallacies, cognitive biases, and manipulation techniques.
+  Based on the analyzed text provided, generate a comprehensive and detailed critical summary highlighting the presence of fallacies, cognitive biases, and manipulation techniques.
   The summary should be in a {{analysisStyle}} style.
 
   Analyzed Text: {{{analyzedText}}}
+
+  Please ensure your summary is thorough, well-explained, and substantial.
   `,
 });
 

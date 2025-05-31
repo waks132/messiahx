@@ -15,13 +15,13 @@ import {z} from 'genkit';
 const ClassifiedCategorySchema = z.object({
   categoryName: z.string().describe('The name of the cognitive category detected (e.g., Emotional, Authority, Logical Fallacy, Social Pressure, Information Bias, or other relevant fallacy/bias/rhetorical device).'),
   intensity: z.number().min(0).max(10).describe('The intensity of this category in the text on a scale of 0 (not present/very weak) to 10 (very strong/dominant).'),
-  description: z.string().describe('A brief explanation (1-2 sentences) of why this category was identified, its manifestation in the text, AND how the overall content type classification influenced its perceived intensity.'),
+  description: z.string().describe('A brief but comprehensive explanation (2-3 sentences) of why this category was identified, its manifestation in the text, AND how the overall content type classification influenced its perceived intensity.'),
 });
 
 const ContentTypeClassificationSchema = z.object({
   type: z.enum(['conspiracy', 'literary', 'neutral', 'promotional', 'opinion', 'news_report', 'political_discourse', 'other']).describe('The overall detected primary type of the content based on its style, purpose, and characteristics.'),
   score: z.number().min(0).max(100).describe('A score (0-100) reflecting the confidence or dominance of the detected content type. For conspiracy: risk/intensity (e.g., 65+). For literary: rhetorical richness (e.g., 25-45%). For neutral: objectivity level. For political discourse: persuasive intent level.'),
-  reasoning: z.string().describe('Brief reasoning for this overall content classification (2-3 sentences), highlighting key indicators from the original text and the initial analysis elements.'),
+  reasoning: z.string().describe('Comprehensive reasoning for this overall content classification (3-4 sentences), highlighting key indicators from the original text and the initial analysis elements.'),
 });
 
 const ClassifyCognitiveCategoriesInputSchema = z.object({
@@ -35,8 +35,8 @@ export type ClassifyCognitiveCategoriesInput = z.infer<typeof ClassifyCognitiveC
 
 
 const ClassifyCognitiveCategoriesOutputSchema = z.object({
-  classifiedCategories: z.array(ClassifiedCategorySchema).describe('A list of cognitive categories identified, their intensities, and descriptions. This should prominently feature assessments for Emotional, Authority, Logical Fallacy, Social Pressure, and Information Bias triggers, plus any other relevant categories identified. Each description MUST explain how the overall content type influenced its intensity rating.'),
-  overallClassification: ContentTypeClassificationSchema.describe('The overall classification of the content based on the detected categories and their intensities.'),
+  classifiedCategories: z.array(ClassifiedCategorySchema).describe('A comprehensive list of cognitive categories identified, their intensities, and detailed descriptions. This should prominently feature assessments for Emotional, Authority, Logical Fallacy, Social Pressure, and Information Bias triggers, plus any other relevant categories identified. Each description MUST explain how the overall content type influenced its intensity rating.'),
+  overallClassification: ContentTypeClassificationSchema.describe('The overall classification of the content based on the detected categories and their intensities, with detailed reasoning.'),
 });
 export type ClassifyCognitiveCategoriesOutput = z.infer<typeof ClassifyCognitiveCategoriesOutputSchema>;
 
@@ -52,7 +52,7 @@ const classifyCognitiveCategoriesPrompt = ai.definePrompt({
   Given the following elements detected in a text (summary of discursive elements, rhetorical techniques, cognitive biases, unverifiable facts) and the original text itself, your task is to:
 
   1.  **Overall Content Classification**:
-      a.  Carefully analyze the original text and the provided discursive elements. Determine the primary **type** of the content from: 'conspiracy', 'literary', 'neutral', 'promotional', 'opinion', 'news_report', 'political_discourse', 'other'. 
+      a.  Carefully analyze the original text and the provided discursive elements. Determine the primary **type** of the content from: 'conspiracy', 'literary', 'neutral', 'promotional', 'opinion', 'news_report', 'political_discourse', 'other'.
           *   'literary' is for artistic texts (poetry, high rhetoric).
           *   'political_discourse' is for speeches by public figures or texts with clear persuasive intent within a political context.
           *   'conspiracy' is for texts aiming to promote unsubstantiated theories with high emotional load and often targeting specific groups or entities.
@@ -64,13 +64,13 @@ const classifyCognitiveCategoriesPrompt = ai.definePrompt({
           *   'conspiracy': High scores (e.g., 65-100) indicate strong presence.
           *   'literary': Moderate scores (e.g., 20-50%) for rich rhetorical content that is not primarily manipulative.
           *   'political_discourse': Scores can vary (e.g., 30-80%) depending on persuasive intensity and clarity of agenda.
-      c.  Provide a brief **reasoning** for this classification (2-3 sentences), highlighting key indicators in the original text and the provided analysis elements.
+      c.  Provide a **comprehensive reasoning** for this classification (3-4 sentences), highlighting key indicators in the original text and the provided analysis elements.
 
   2.  **Specific Cognitive Trigger Analysis**:
       a.  Based on the **Overall Content Classification** from step 1, analyze the following core cognitive triggers: **Emotional, Authority, Logical Fallacy, Social Pressure, Information Bias**.
       b.  For each of these five core triggers:
           i.  Determine its **intensity** in the text (0 for not present/very weak, 10 for very dominant).
-          ii. Provide a **description** (1-2 sentences) explaining its manifestation AND **explicitly state how the overall content type (determined in step 1) influenced your intensity rating for this specific trigger.** For example: "The 'conspiracy' context significantly amplifies the perceived intensity of emotional appeals (fear, anger), leading to an intensity of 8/10." OR "In this 'literary' text, the appeal to authority serves to establish poetic voice rather than to manipulate, resulting in an intensity of 3/10." OR "For 'political_discourse', the use of logical fallacies might be a deliberate persuasive tactic, rated at 7/10 intensity."
+          ii. Provide a **detailed description** (2-3 sentences) explaining its manifestation AND **explicitly state how the overall content type (determined in step 1) influenced your intensity rating for this specific trigger.** For example: "The 'conspiracy' context significantly amplifies the perceived intensity of emotional appeals (fear, anger), leading to an intensity of 8/10." OR "In this 'literary' text, the appeal to authority serves to establish poetic voice rather than to manipulate, resulting in an intensity of 3/10." OR "For 'political_discourse', the use of logical fallacies might be a deliberate persuasive tactic, rated at 7/10 intensity."
       c.  If relevant, identify any **other specific cognitive categories** (e.g., specific named fallacies like 'Ad Hominem', specific biases like 'Confirmation Bias') that are particularly salient, their intensities, and descriptions, also explaining the influence of the overall content type.
 
   Input from previous analysis:
@@ -85,6 +85,7 @@ const classifyCognitiveCategoriesPrompt = ai.definePrompt({
   Base your classification and intensity scores on the prevalence and impact of the identified elements within the original text, critically considering the overall context type you determined.
   Ensure your output strictly adheres to the defined JSON schema for classifiedCategories and overallClassification.
   The 'classifiedCategories' array MUST prominently feature entries for Emotional, Authority, Logical Fallacy, Social Pressure, and Information Bias, each with a context-aware description.
+  Please provide a thorough and well-explained response.
   `,
 });
 
@@ -98,17 +99,14 @@ const classifyCognitiveCategoriesFlow = ai.defineFlow(
     try {
       const {output} = await classifyCognitiveCategoriesPrompt(input);
       if (!output) {
-        // This case should ideally be caught by Genkit if the LLM truly returns nothing,
-        // but as a fallback.
         throw new Error('Cognitive classification LLM call returned no output.');
       }
       return {
-        classifiedCategories: output.classifiedCategories || [], // Ensure array exists
-        overallClassification: output.overallClassification || { type: 'other', score: 0, reasoning: 'Overall classification data was not provided by the model.' } // Ensure object exists
+        classifiedCategories: output.classifiedCategories || [],
+        overallClassification: output.overallClassification || { type: 'other', score: 0, reasoning: 'Overall classification data was not provided by the model.' }
       };
     } catch (error) {
        console.error("Error in classifyCognitiveCategoriesFlow:", error);
-       // Construct a default error response that matches the schema
        return {
          classifiedCategories: [],
          overallClassification: { type: 'other', score: 0, reasoning: `Failed to classify cognitive categories: ${error instanceof Error ? error.message : String(error)}` }

@@ -2,13 +2,15 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb, Info } from "lucide-react";
+import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb, Info, Download } from "lucide-react";
 import { CognitiveMapChart } from "@/components/charts/cognitive-map-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { AnalyzeTextOutput } from "@/ai/flows/analyze-text-for-manipulation";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { downloadJson } from "@/lib/utils";
 
 interface CognitiveAnalysisPanelProps {
   analysisResults: AnalyzeTextOutput | null;
@@ -66,6 +68,12 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
 );
 
 export function CognitiveAnalysisPanel({ analysisResults, isLoading }: CognitiveAnalysisPanelProps) {
+  const handleDownloadAnalysis = () => {
+    if (analysisResults) {
+      downloadJson(analysisResults, "analyse_cognitive_initiale.json");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col justify-center items-center min-h-[400px] space-y-4">
@@ -128,21 +136,29 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
   return (
     <div className="space-y-6">
       <Card className="shadow-xl animate-fadeIn bg-card/80 backdrop-blur-md border-primary/30">
-        <CardHeader>
-          <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
-            <SearchCheck className="h-6 w-6" />
-            Analyse Initiale du Discours
-          </CardTitle>
-          <CardDescription>Résumé et éléments discursifs identifiés par l'IA de manière neutre. L'intention et l'intensité manipulative seront évaluées dans l'onglet "Classification".</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
+              <SearchCheck className="h-6 w-6" />
+              Analyse Initiale du Discours
+            </CardTitle>
+            <CardDescription>Résumé et éléments discursifs identifiés par l'IA de manière neutre. L'intention et l'intensité manipulative seront évaluées dans l'onglet "Classification".</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleDownloadAnalysis} disabled={!analysisResults}>
+            <Download className="mr-2 h-4 w-4" />
+            Télécharger l'Analyse
+          </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <h3 className="text-lg font-semibold font-headline text-accent flex items-center gap-2">
             <Lightbulb className="h-5 w-5" />
             Résumé des Éléments Discursifs :
           </h3>
-          <p className="text-foreground/90 leading-relaxed bg-muted/20 p-4 rounded-md shadow-inner text-sm">
-            {analysisResults.summary || "Aucun résumé disponible."}
-          </p>
+          <ScrollArea className="h-auto max-h-60 pr-3">
+            <p className="text-foreground/90 leading-relaxed bg-muted/20 p-4 rounded-md shadow-inner text-sm whitespace-pre-wrap">
+              {analysisResults.summary || "Aucun résumé disponible."}
+            </p>
+          </ScrollArea>
         </CardContent>
       </Card>
 
@@ -169,7 +185,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
           icon={<ShieldAlert className="h-5 w-5" />}
           badgeVariant="destructive"
            badgeClassName="bg-gradient-to-br from-red-500 to-orange-400 text-white"
-           tooltipText="Affirmations présentées comme des faits mais difficiles ou impossibles à vérifier objectivement."
+           tooltipText="Affirmations présentées comme des faits objectifs mais difficiles ou impossibles à vérifier empiriquement. Distinct des opinions, métaphores ou expressions poétiques."
         />
       </div>
       

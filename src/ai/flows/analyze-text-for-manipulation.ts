@@ -21,7 +21,7 @@ const AnalyzeTextOutputSchema = z.object({
   summary: z.string().describe('A neutral summary of the discursive elements found in the text.'),
   rhetoricalTechniques: z.array(z.string()).describe('A list of rhetorical techniques identified (e.g., metaphors, irony, hyperbole).'),
   cognitiveBiases: z.array(z.string()).describe('A list of potential cognitive biases suggested by the text (e.g., confirmation bias, anchoring).'),
-  unverifiableFacts: z.array(z.string()).describe('A list of statements presented as facts but potentially difficult to verify.'),
+  unverifiableFacts: z.array(z.string()).describe('A list of statements *presented as objective factual claims* but that are difficult or impossible to verify empirically. These must have the appearance of factuality, distinct from poetic expressions, opinions, or clearly subjective statements.'),
 });
 export type AnalyzeTextOutput = z.infer<typeof AnalyzeTextOutputSchema>;
 
@@ -33,13 +33,15 @@ const analyzeTextPrompt = ai.definePrompt({
   name: 'analyzeTextPrompt',
   input: {schema: AnalyzeTextInputSchema},
   output: {schema: AnalyzeTextOutputSchema},
-  prompt: `You are an expert in discourse analysis. Your task is to identify potential rhetorical techniques, cognitive biases, and statements that may be difficult to verify in the provided text. 
+  prompt: `You are an expert in discourse analysis. Your task is to identify potential rhetorical techniques, cognitive biases, and statements that may be difficult to verify in the provided text.
 List them factually and neutrally. The context, intent, and manipulative intensity will be assessed in a subsequent step.
 
 Text: {{{text}}}
 
-Provide a summary of your findings and a structured list of the rhetorical techniques, potential cognitive biases, and unverifiable statements.
-Ensure your output strictly matches the output schema: {summary: string, rhetoricalTechniques: string[], cognitiveBiases: string[], unverifiableFacts: string[]}.`,
+Provide a comprehensive and detailed summary of your findings and a structured list of the rhetorical techniques, potential cognitive biases, and unverifiable statements.
+For 'unverifiableFacts', only list statements *presented as objective factual claims* that are difficult or impossible to verify empirically. These must have the appearance of factuality, distinct from poetic expressions, opinions, or clearly subjective statements.
+Ensure your output strictly matches the output schema: {summary: string, rhetoricalTechniques: string[], cognitiveBiases: string[], unverifiableFacts: string[]}.
+Please provide a thorough and well-explained response.`,
 });
 
 const analyzeTextFlow = ai.defineFlow(
