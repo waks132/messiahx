@@ -4,13 +4,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { BrainCircuit, Zap, Info, BarChartBig, HelpCircle, Lightbulb } from "lucide-react";
+import { BrainCircuit, Zap, Info, BarChartBig, HelpCircle, Lightbulb, AlertTriangle } from "lucide-react";
 import type { ClassifyCognitiveCategoriesOutput, ClassifyCognitiveCategoriesInput } from "@/ai/flows/classify-cognitive-categories";
 import type { AnalyzeTextOutput } from "@/ai/flows/analyze-text-for-manipulation";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CognitiveIntensityChart } from "@/components/charts/cognitive-intensity-chart";
 
 interface CognitiveClassificationPanelProps {
   classificationResult: ClassifyCognitiveCategoriesOutput | null;
@@ -25,13 +26,6 @@ const getScoreColor = (score: number): string => {
   if (score >= 30) return "text-yellow-600";
   return "text-green-600";
 };
-
-const getIntensityColor = (intensity: number): string => {
-  if (intensity >= 7) return "bg-destructive/80";
-  if (intensity >= 4) return "bg-yellow-500/80";
-  return "bg-green-500/80";
-}
-
 
 export function CognitiveClassificationPanel({ 
   classificationResult, 
@@ -55,6 +49,7 @@ export function CognitiveClassificationPanel({
   };
   
   const isReadyToClassify = !!baseAnalysisResults && !!originalText.trim();
+  const overallClassificationData = classificationResult?.overallClassification;
 
   return (
     <Card className="shadow-lg">
@@ -100,71 +95,87 @@ export function CognitiveClassificationPanel({
 
         {classificationResult && !isLoading && (
           <div className="space-y-6 pt-4 animate-fadeIn">
-            {/* Overall Classification Section */}
-            <Card className="bg-secondary/30 shadow-inner">
-              <CardHeader>
-                <CardTitle className="font-headline text-xl flex items-center gap-2">
-                  <Info className="h-5 w-5 text-accent" />
-                  Classification Globale du Contenu
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Type de Contenu:</span>
-                  <Badge variant="default" className="text-base px-3 py-1">{classificationResult.overallClassification.type}</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Score:</span>
-                  <span className={`font-bold text-lg ${getScoreColor(classificationResult.overallClassification.score)}`}>
-                    {classificationResult.overallClassification.score.toFixed(0)}/100
-                  </span>
-                </div>
-                 <div className="w-full">
-                    <Progress value={classificationResult.overallClassification.score} className="h-3 [&>div]:bg-gradient-to-r [&>div]:from-green-500 [&>div]:via-yellow-500 [&>div]:to-red-500" />
-                </div>
-                <div>
-                  <h4 className="font-semibold mb-1 flex items-center gap-1"><Lightbulb className="h-4 w-4"/>Raisonnement:</h4>
-                  <p className="text-sm text-foreground/80 leading-relaxed">{classificationResult.overallClassification.reasoning}</p>
-                </div>
-              </CardContent>
-            </Card>
+            {overallClassificationData ? (
+              <Card className="bg-secondary/30 shadow-inner">
+                <CardHeader>
+                  <CardTitle className="font-headline text-xl flex items-center gap-2">
+                    <Info className="h-5 w-5 text-accent" />
+                    Classification Globale du Contenu
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Type de Contenu:</span>
+                    <Badge variant="default" className="text-base px-3 py-1">{overallClassificationData.type || "N/A"}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">Score:</span>
+                    <span className={`font-bold text-lg ${getScoreColor(overallClassificationData.score || 0)}`}>
+                      {(overallClassificationData.score || 0).toFixed(0)}/100
+                    </span>
+                  </div>
+                  <div className="w-full">
+                      <Progress value={overallClassificationData.score || 0} className="h-3" />
+                  </div>
+                  {overallClassificationData.reasoning && (
+                    <div>
+                      <h4 className="font-semibold mb-1 flex items-center gap-1"><Lightbulb className="h-4 w-4"/>Raisonnement:</h4>
+                      <p className="text-sm text-foreground/80 leading-relaxed">{overallClassificationData.reasoning}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="bg-destructive/10 border-destructive/50 shadow-inner">
+                <CardHeader>
+                    <CardTitle className="font-headline text-xl flex items-center gap-2 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
+                        Classification Globale Indisponible
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-destructive/80">Les données de classification globale n'ont pas pu être déterminées.</p>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Classified Categories Section */}
+            <CognitiveIntensityChart classificationResult={classificationResult} />
+
             <div>
               <h3 className="text-xl font-semibold font-headline mb-3 flex items-center gap-2">
                 <BarChartBig className="h-5 w-5 text-accent" />
                 Catégories Cognitives Détaillées:
               </h3>
-              {classificationResult.classifiedCategories.length > 0 ? (
+              {classificationResult.classifiedCategories && classificationResult.classifiedCategories.length > 0 ? (
                 <Accordion type="single" collapsible className="w-full">
                   {classificationResult.classifiedCategories.map((item, index) => (
                     <AccordionItem value={`item-${index}`} key={index} className="border-b border-border/50">
                       <AccordionTrigger className="hover:bg-secondary/20 px-2 py-3 rounded-md transition-colors">
                         <div className="flex items-center justify-between w-full">
-                            <span className="font-semibold text-left">{item.categoryName}</span>
+                            <span className="font-semibold text-left">{item.categoryName || "Catégorie inconnue"}</span>
                             <TooltipProvider>
                               <Tooltip delayDuration={100}>
                                   <TooltipTrigger asChild>
                                       <div className="flex items-center gap-2">
-                                          <Progress value={item.intensity * 10} className={`w-20 h-2.5 ${getIntensityColor(item.intensity)}`} />
-                                          <Badge variant="outline" className="text-sm">{item.intensity}/10</Badge>
+                                          <Progress value={(item.intensity || 0) * 10} className={`w-20 h-2.5`} />
+                                          <Badge variant="outline" className="text-sm">{(item.intensity || 0)}/10</Badge>
                                       </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="top">
-                                      <p>Intensité: {item.intensity}/10</p>
+                                      <p>Intensité: {item.intensity || 0}/10. {item.description || "Pas de description."}</p>
                                   </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent className="px-2 py-3 text-sm text-foreground/80 bg-background rounded-b-md">
-                        {item.description}
+                        {item.description || "Pas de description fournie."}
                       </AccordionContent>
                     </AccordionItem>
                   ))}
                 </Accordion>
               ) : (
-                <p className="text-muted-foreground">Aucune catégorie cognitive spécifique n'a été identifiée pour ce texte.</p>
+                <p className="text-muted-foreground">Aucune catégorie cognitive spécifique n'a été identifiée pour ce texte, ou les données sont incomplètes.</p>
               )}
             </div>
           </div>
