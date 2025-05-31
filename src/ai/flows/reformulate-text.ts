@@ -28,7 +28,7 @@ const ReformulateTextOutputSchema = z.object({
 export type ReformulateTextOutput = z.infer<typeof ReformulateTextOutputSchema>;
 
 // This configuration is hardcoded to match the structure in `public/prompts.json -> reformulationPrompts`.
-// Ideally, this would be dynamically loaded. Ensure "Veuillez fournir une réponse détaillée..." is part of each prompt.
+// Ideally, this would be dynamically loaded.
 const reformulationPromptsConfig: PromptsData['reformulationPrompts'] = {
   neutral: {
     name: 'Neutral Reformulation',
@@ -90,27 +90,19 @@ const reformulateTextFlow = ai.defineFlow(
       };
     }
 
-    try {
-      const systemPromptContent = selectedPrompts.system_prompt_template;
-      const userPromptContent = selectedPrompts.user_prompt_template.replace('{text}', text);
+    const systemPromptContent = selectedPrompts.system_prompt_template;
+    const userPromptContent = selectedPrompts.user_prompt_template.replace('{text}', text);
       
-      console.log(`Reformulating text for style "${style}". User prompt length: ${userPromptContent.length}. System prompt length: ${systemPromptContent.length}`);
-      console.log(`User prompt content (first 500 chars): ${userPromptContent.substring(0,500)}`);
-      console.log(`System prompt content (first 500 chars): ${systemPromptContent.substring(0,500)}`);
+    console.log(`Reformulating text for style "${style}". User prompt length: ${userPromptContent.length}. System prompt length: ${systemPromptContent.length}`);
+    console.log(`User prompt content (first 500 chars): ${userPromptContent.substring(0,500)}`);
+    console.log(`System prompt content (first 500 chars): ${systemPromptContent.substring(0,500)}`);
 
+    try {
       const {text: reformulatedTextResult} = await ai.generate({
-        prompt: [ 
-          {
-            role: 'system',
-            content: [{text: systemPromptContent}],
-          },
-          {
-            role: 'user',
-            content: [{text: userPromptContent}],
-          },
-        ],
-        output: {format: 'text'}, 
-        config: { temperature: 0.7 } 
+        systemInstruction: [{ text: systemPromptContent }], // System instruction as Part[]
+        prompt: [{ text: userPromptContent }],             // User prompt as Part[]
+        output: { format: 'text' },
+        config: { temperature: 0.7 }
       });
       
       const reformulatedText = reformulatedTextResult;
@@ -142,7 +134,7 @@ const reformulateTextFlow = ai.defineFlow(
       }
       
       console.error(`Problematic input text for style "${style}" (first 500 chars): ${text.substring(0,500)}`);
-      console.error(`Problematic system prompt for style "${style}" (first 500 chars): ${selectedPrompts.system_prompt_template.substring(0,500)}`);
+      console.error(`Problematic system prompt for style "${style}" (first 500 chars): ${systemPromptContent.substring(0,500)}`);
       console.error(`Problematic user prompt template for style "${style}" (first 500 chars): ${selectedPrompts.user_prompt_template.substring(0,500)}`);
 
       return {
