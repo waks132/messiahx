@@ -15,62 +15,106 @@ import { downloadJson } from "@/lib/utils";
 interface CognitiveAnalysisPanelProps {
   analysisResults: AnalyzeTextOutput | null;
   isLoading: boolean;
+  currentLanguage: string;
 }
 
-const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassName, tooltipText }: { title: string; items: string[]; icon: React.ReactNode; badgeVariant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info", badgeClassName?: string, tooltipText?: string }) => (
-  <Card className="flex-1 min-w-[280px] animate-fadeIn transition-shadow duration-300 hover:shadow-lg bg-card/90 backdrop-blur-sm border border-border/70">
-    <CardHeader>
-      <CardTitle className="text-lg font-headline flex items-center gap-2 text-primary">
-        {icon}
-        {title}
-        {tooltipText && (
-          <TooltipProvider>
-            <Tooltip delayDuration={100}>
-              <TooltipTrigger asChild>
-                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-              </TooltipTrigger>
-              <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
-                <p>{tooltipText}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
-      </CardTitle>
-    </CardHeader>
-    <CardContent>
-      {items && items.length > 0 ? (
-        <ScrollArea className="h-40 pr-3">
-          <ul className="space-y-2">
-            {items.map((item, index) => (
-              <li key={index} className="text-sm">
-                <TooltipProvider>
-                  <Tooltip delayDuration={100}>
-                    <TooltipTrigger asChild>
-                       <Badge variant={badgeVariant} className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow ${badgeClassName}`}>
-                         {item}
-                       </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
-                      <p className="font-semibold">{title.slice(0, -1)}:</p>
-                      <p>{item}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </li>
-            ))}
-          </ul>
-        </ScrollArea>
-      ) : (
-        <p className="text-sm text-muted-foreground italic">Aucun élément de ce type détecté.</p>
-      )}
-    </CardContent>
-  </Card>
-);
+const panelLabels: Record<string, Record<string, string>> = {
+  fr: {
+    title: "Analyse Initiale du Discours",
+    description: "Résumé et éléments discursifs identifiés par l'IA de manière neutre. L'intention et l'intensité manipulative seront évaluées dans l'onglet \"Classification\".",
+    downloadButton: "Télécharger l'Analyse",
+    summaryTitle: "Résumé des Éléments Discursifs :",
+    noSummary: "Aucun résumé disponible.",
+    rhetoricalTechniques: "Techniques Rhétoriques",
+    rhetoricalTooltip: "Ex: métaphores, ironie, hyperbole, questions rhétoriques.",
+    cognitiveBiases: "Biais Cognitifs Potentiels",
+    cognitiveTooltip: "Ex: biais de confirmation, ancrage, effet de halo.",
+    unverifiableFacts: "Faits Non Vérifiables",
+    unverifiableTooltip: "Affirmations présentées comme des faits objectifs mais difficiles ou impossibles à vérifier empiriquement. Distinct des opinions, métaphores ou expressions poétiques.",
+    noItemsDetected: "Aucun élément de ce type détecté.",
+    loadingText: "Analyse initiale en cours...",
+    resultsAppearHere: "Les résultats de l'analyse initiale du discours apparaîtront ici une fois le texte soumis et analysé.",
+    noResultsToShow: "Aucun résultat à afficher pour l'analyse initiale. Veuillez soumettre un texte.",
+  },
+  en: {
+    title: "Initial Discourse Analysis",
+    description: "Summary and discursive elements identified by the AI neutrally. Manipulative intent and intensity will be assessed in the \"Classification\" tab.",
+    downloadButton: "Download Analysis",
+    summaryTitle: "Summary of Discursive Elements:",
+    noSummary: "No summary available.",
+    rhetoricalTechniques: "Rhetorical Techniques",
+    rhetoricalTooltip: "E.g., metaphors, irony, hyperbole, rhetorical questions.",
+    cognitiveBiases: "Potential Cognitive Biases",
+    cognitiveTooltip: "E.g., confirmation bias, anchoring, halo effect.",
+    unverifiableFacts: "Unverifiable Facts",
+    unverifiableTooltip: "Statements presented as objective facts but difficult or impossible to verify empirically. Distinct from opinions, metaphors, or poetic expressions.",
+    noItemsDetected: "No such items detected.",
+    loadingText: "Initial analysis in progress...",
+    resultsAppearHere: "The results of the initial discourse analysis will appear here once the text is submitted and analyzed.",
+    noResultsToShow: "No results to display for initial analysis. Please submit a text.",
+  }
+};
 
-export function CognitiveAnalysisPanel({ analysisResults, isLoading }: CognitiveAnalysisPanelProps) {
+const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassName, tooltipText, currentLanguage }: { title: string; items: string[]; icon: React.ReactNode; badgeVariant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info", badgeClassName?: string, tooltipText?: string, currentLanguage: string }) => {
+  const labels = panelLabels[currentLanguage] || panelLabels.fr;
+  return (
+    <Card className="flex-1 min-w-[280px] animate-fadeIn transition-shadow duration-300 hover:shadow-lg bg-card/90 backdrop-blur-sm border border-border/70">
+      <CardHeader>
+        <CardTitle className="text-lg font-headline flex items-center gap-2 text-primary">
+          {icon}
+          {title}
+          {tooltipText && (
+            <TooltipProvider>
+              <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                  <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
+                  <p>{tooltipText}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {items && items.length > 0 ? (
+          <ScrollArea className="h-40 pr-3">
+            <ul className="space-y-2">
+              {items.map((item, index) => (
+                <li key={index} className="text-sm">
+                  <TooltipProvider>
+                    <Tooltip delayDuration={100}>
+                      <TooltipTrigger asChild>
+                        <Badge variant={badgeVariant} className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow ${badgeClassName}`}>
+                          {item}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
+                        <p className="font-semibold">{title.slice(0, -1)}:</p>
+                        <p>{item}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </li>
+              ))}
+            </ul>
+          </ScrollArea>
+        ) : (
+          <p className="text-sm text-muted-foreground italic">{labels.noItemsDetected}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLanguage }: CognitiveAnalysisPanelProps) {
+  const labels = panelLabels[currentLanguage] || panelLabels.fr;
+
   const handleDownloadAnalysis = () => {
     if (analysisResults) {
-      downloadJson(analysisResults, "analyse_cognitive_initiale.json");
+      const filename = currentLanguage === 'fr' ? "analyse_cognitive_initiale.json" : "initial_cognitive_analysis.json";
+      downloadJson(analysisResults, filename);
     }
   };
 
@@ -78,25 +122,29 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
     return (
       <div className="flex flex-col justify-center items-center min-h-[400px] space-y-4">
         <LoadingSpinner size="lg" />
-        <p className="text-lg text-primary animate-pulse">Analyse initiale en cours...</p>
+        <p className="text-lg text-primary animate-pulse">{labels.loadingText}</p>
       </div>
     );
   }
 
-  if (!analysisResults || (analysisResults.summary.startsWith("Failed to analyze text") && !analysisResults.summary.startsWith("Failed to analyze text: Analysis summary not available."))) {
+  const hasFailed = analysisResults?.summary.startsWith("Failed") || analysisResults?.summary.startsWith("Échec");
+  const isEmptyPlaceholder = analysisResults?.summary.startsWith("Failed to analyze text: Analysis summary not available.") || analysisResults?.summary.startsWith("Résumé de l'analyse non disponible.");
+
+
+  if (!analysisResults || (hasFailed && !isEmptyPlaceholder)) {
     return (
       <Card className="shadow-xl bg-card/80 backdrop-blur-md border-primary/30">
         <CardHeader>
           <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
             <SearchCheck className="h-6 w-6" />
-            Analyse Initiale du Discours
+            {labels.title}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center py-4">
-            {analysisResults?.summary || "Les résultats de l'analyse initiale du discours apparaîtront ici une fois le texte soumis et analysé."}
+            {analysisResults?.summary || labels.resultsAppearHere}
           </p>
-           {analysisResults?.summary.startsWith("Failed to analyze text") && !analysisResults.summary.startsWith("Failed to analyze text: Analysis summary not available.") && (
+           {hasFailed && !isEmptyPlaceholder && (
             <p className="text-destructive text-center py-2 bg-destructive/10 rounded-md">
               {analysisResults.summary}
             </p>
@@ -107,11 +155,12 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
   }
   
   const hasResults = analysisResults && 
-                     !analysisResults.summary.startsWith("Failed to analyze text: Analysis summary not available.") &&
+                     !isEmptyPlaceholder &&
+                     !hasFailed &&
                      (analysisResults.rhetoricalTechniques.length > 0 ||
                       analysisResults.cognitiveBiases.length > 0 ||
                       analysisResults.unverifiableFacts.length > 0 ||
-                      (analysisResults.summary && !analysisResults.summary.startsWith("Failed to analyze text")));
+                      (analysisResults.summary && !analysisResults.summary.startsWith("Failed") && !analysisResults.summary.startsWith("Échec")));
 
 
   if (!hasResults) {
@@ -120,12 +169,12 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
         <CardHeader>
           <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
             <SearchCheck className="h-6 w-6" />
-            Analyse Initiale du Discours
+            {labels.title}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center py-4">
-            Aucun résultat à afficher pour l'analyse initiale. Veuillez soumettre un texte.
+            {labels.noResultsToShow}
           </p>
         </CardContent>
       </Card>
@@ -140,23 +189,23 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
           <div>
             <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
               <SearchCheck className="h-6 w-6" />
-              Analyse Initiale du Discours
+              {labels.title}
             </CardTitle>
-            <CardDescription>Résumé et éléments discursifs identifiés par l'IA de manière neutre. L'intention et l'intensité manipulative seront évaluées dans l'onglet "Classification".</CardDescription>
+            <CardDescription>{labels.description}</CardDescription>
           </div>
           <Button variant="outline" size="sm" onClick={handleDownloadAnalysis} disabled={!analysisResults}>
             <Download className="mr-2 h-4 w-4" />
-            Télécharger l'Analyse
+            {labels.downloadButton}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
           <h3 className="text-lg font-semibold font-headline text-accent flex items-center gap-2">
             <Lightbulb className="h-5 w-5" />
-            Résumé des Éléments Discursifs :
+            {labels.summaryTitle}
           </h3>
           <ScrollArea className="h-auto max-h-60 pr-3">
             <p className="text-foreground/90 leading-relaxed bg-muted/20 p-4 rounded-md shadow-inner text-sm whitespace-pre-wrap">
-              {analysisResults.summary || "Aucun résumé disponible."}
+              {analysisResults.summary || labels.noSummary}
             </p>
           </ScrollArea>
         </CardContent>
@@ -164,28 +213,31 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <ItemList 
-          title="Techniques Rhétoriques" 
+          title={labels.rhetoricalTechniques}
           items={analysisResults.rhetoricalTechniques || []}
           icon={<BookText className="h-5 w-5" />}
           badgeVariant="info"
           badgeClassName="bg-gradient-to-br from-sky-500 to-cyan-400 text-white"
-          tooltipText="Ex: métaphores, ironie, hyperbole, questions rhétoriques."
+          tooltipText={labels.rhetoricalTooltip}
+          currentLanguage={currentLanguage}
         />
         <ItemList 
-          title="Biais Cognitifs Potentiels" 
+          title={labels.cognitiveBiases} 
           items={analysisResults.cognitiveBiases || []}
           icon={<Eye className="h-5 w-5" />}
           badgeVariant="warning"
           badgeClassName="bg-gradient-to-br from-amber-500 to-yellow-400 text-black"
-          tooltipText="Ex: biais de confirmation, ancrage, effet de halo."
+          tooltipText={labels.cognitiveTooltip}
+          currentLanguage={currentLanguage}
         />
         <ItemList 
-          title="Faits Non Vérifiables" 
+          title={labels.unverifiableFacts}
           items={analysisResults.unverifiableFacts || []}
           icon={<ShieldAlert className="h-5 w-5" />}
           badgeVariant="destructive"
            badgeClassName="bg-gradient-to-br from-red-500 to-orange-400 text-white"
-           tooltipText="Affirmations présentées comme des faits objectifs mais difficiles ou impossibles à vérifier empiriquement. Distinct des opinions, métaphores ou expressions poétiques."
+           tooltipText={labels.unverifiableTooltip}
+           currentLanguage={currentLanguage}
         />
       </div>
       
@@ -194,3 +246,4 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
     </div>
   );
 }
+    

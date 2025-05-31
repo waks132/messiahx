@@ -16,6 +16,7 @@ import {z} from 'genkit';
 
 const DetectHiddenNarrativesInputSchema = z.object({
   text: z.string().describe('The text to analyze for hidden narratives.'),
+  language: z.string().default('fr').describe('The language for the response (e.g., "fr", "en").'),
 });
 export type DetectHiddenNarrativesInput = z.infer<typeof DetectHiddenNarrativesInputSchema>;
 
@@ -35,6 +36,7 @@ const detectHiddenNarrativesPrompt = ai.definePrompt({
   input: {schema: DetectHiddenNarrativesInputSchema},
   output: {schema: DetectHiddenNarrativesOutputSchema},
   prompt: `You are tasked with performing a "paranoid reading" of the following text to uncover implicit intentions and hidden narratives.
+  Your response should be in {{language}}.
 
   Text: {{{text}}}
 
@@ -53,9 +55,17 @@ const detectHiddenNarrativesFlow = ai.defineFlow(
     outputSchema: DetectHiddenNarrativesOutputSchema,
   },
   async input => {
-    const {output} = await detectHiddenNarrativesPrompt(input);
-    return output!;
+    try {
+        const {output} = await detectHiddenNarrativesPrompt(input);
+        return output!;
+    } catch (error) {
+        console.error("Error in detectHiddenNarrativesFlow:", error);
+        const lang = input.language || 'fr';
+        const errorMessage = lang === 'fr' 
+            ? "Échec de la détection des narratifs cachés." 
+            : "Failed to detect hidden narratives.";
+        return { hiddenNarratives: errorMessage };
+    }
   }
 );
-
     

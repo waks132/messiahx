@@ -12,17 +12,21 @@ import { researchManipulation as researchManipulationFlow, type ResearchManipula
 
 export async function analyzeTextAction(input: AnalyzeTextInput): Promise<AnalyzeTextOutput> {
   try {
-    const result = await analyzeTextForManipulationFlow(input);
+    // Language is now part of AnalyzeTextInput
+    const result = await analyzeTextForManipulationFlow(input); 
     return {
-      summary: result.summary || "Analysis summary not available.",
+      summary: result.summary || (input.language === 'fr' ? "Résumé de l'analyse non disponible." : "Analysis summary not available."),
       rhetoricalTechniques: result.rhetoricalTechniques || [],
       cognitiveBiases: result.cognitiveBiases || [],
       unverifiableFacts: result.unverifiableFacts || [],
     };
   } catch (error) {
     console.error("Error in analyzeTextAction:", error);
+    const errorSummary = input.language === 'fr'
+        ? `Échec de l'analyse du texte : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+        : `Failed to analyze text: ${error instanceof Error ? error.message : "Unknown error"}`;
     return {
-      summary: `Failed to analyze text: ${error instanceof Error ? error.message : "Unknown error"}`,
+      summary: errorSummary,
       rhetoricalTechniques: [],
       cognitiveBiases: [],
       unverifiableFacts: [],
@@ -32,67 +36,93 @@ export async function analyzeTextAction(input: AnalyzeTextInput): Promise<Analyz
 
 export async function generateCriticalSummaryAction(input: GenerateCriticalSummaryInput): Promise<GenerateCriticalSummaryOutput> {
   try {
+    // Language is now part of GenerateCriticalSummaryInput
     const result = await generateCriticalSummaryFlow(input);
+    const defaultError = input.language === 'fr' 
+        ? "Échec de la génération du résumé critique : Réponse invalide de l'IA."
+        : "Failed to generate critical summary: Invalid response from AI.";
     if (!result || typeof result.summary !== 'string') {
       console.error("Invalid result from generateCriticalSummaryFlow:", result);
-      return { summary: "Failed to generate critical summary: Invalid response from AI." };
+      return { summary: defaultError };
     }
     return result;
   } catch (error) {
     console.error("Error in generateCriticalSummaryAction:", error);
-    return { summary: `Failed to generate critical summary: ${error instanceof Error ? error.message : "Unknown error"}` };
+    const errorMessage = input.language === 'fr'
+        ? `Échec de la génération du résumé critique : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+        : `Failed to generate critical summary: ${error instanceof Error ? error.message : "Unknown error"}`;
+    return { summary: errorMessage };
   }
 }
 
 export async function detectHiddenNarrativesAction(input: DetectHiddenNarrativesInput): Promise<DetectHiddenNarrativesOutput> {
   try {
+    // Language is now part of DetectHiddenNarrativesInput
     const result = await detectHiddenNarrativesFlow(input);
+    const defaultError = input.language === 'fr'
+        ? "Échec de la détection des narratifs cachés : Réponse invalide de l'IA."
+        : "Failed to detect hidden narratives: Invalid response from AI.";
     if (!result || typeof result.hiddenNarratives !== 'string') {
       console.error("Invalid result from detectHiddenNarrativesFlow:", result);
-      return { hiddenNarratives: "Failed to detect hidden narratives: Invalid response from AI." };
+      return { hiddenNarratives: defaultError };
     }
     return result;
   } catch (error) {
     console.error("Error in detectHiddenNarrativesAction:", error);
-    return { hiddenNarratives: `Failed to detect hidden narratives: ${error instanceof Error ? error.message : "Unknown error"}` };
+     const errorMessage = input.language === 'fr'
+        ? `Échec de la détection des narratifs cachés : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+        : `Failed to detect hidden narratives: ${error instanceof Error ? error.message : "Unknown error"}`;
+    return { hiddenNarratives: errorMessage };
   }
 }
 
 export async function classifyCognitiveCategoriesAction(input: ClassifyCognitiveCategoriesInput): Promise<ClassifyCognitiveCategoriesOutput> {
   try {
+    // Language is now part of ClassifyCognitiveCategoriesInput
     const result = await classifyCognitiveCategoriesFlow(input);
+    const defaultReasoning = input.language === 'fr' ? 'Données de classification incomplètes.' : 'Classification data incomplete.';
      return {
       classifiedCategories: result.classifiedCategories || [],
-      overallClassification: result.overallClassification || { type: 'other', score: 0, reasoning: 'Classification data incomplete.' }
+      overallClassification: result.overallClassification || { type: 'other', score: 0, reasoning: defaultReasoning }
     };
   } catch (error) {
     console.error("Error in classifyCognitiveCategoriesAction:", error);
-    let errorMessage = "An unknown error occurred during classification.";
+    let errorMessage = input.language === 'fr' ? "Une erreur inconnue est survenue durant la classification." : "An unknown error occurred during classification.";
     if (error instanceof Error) {
        errorMessage = error.message;
     }
+    const finalReasoning = input.language === 'fr'
+        ? `Échec de la classification des catégories cognitives : ${errorMessage}`
+        : `Failed to classify cognitive categories: ${errorMessage}`;
     return {
       classifiedCategories: [],
-      overallClassification: { type: 'other', score: 0, reasoning: `Failed to classify cognitive categories: ${errorMessage}` }
+      overallClassification: { type: 'other', score: 0, reasoning: finalReasoning }
     };
   }
 }
 
 export async function reformulateTextAction(input: ReformulateTextInput): Promise<ReformulateTextOutput> {
   try {
+    // Language is now part of ReformulateTextInput
     const result = await reformulateTextFlow(input);
+    const defaultError = input.language === 'fr'
+        ? "Échec de la reformulation du texte : Réponse invalide de l'IA."
+        : "Failed to reformulate text: Invalid response from AI.";
     if (!result || typeof result.reformulatedText !== 'string' || typeof result.styleUsed !== 'string') {
       console.error("Invalid result from reformulateTextFlow:", result);
       return { 
-        reformulatedText: "Failed to reformulate text: Invalid response from AI.",
+        reformulatedText: defaultError,
         styleUsed: input.style 
       };
     }
     return result;
   } catch (error) {
     console.error("Error in reformulateTextAction:", error);
+    const errorMessage = input.language === 'fr'
+        ? `Échec de la reformulation du texte : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+        : `Failed to reformulate text: ${error instanceof Error ? error.message : "Unknown error"}`;
     return { 
-      reformulatedText: `Failed to reformulate text: ${error instanceof Error ? error.message : "Unknown error"}`,
+      reformulatedText: errorMessage,
       styleUsed: input.style 
     };
   }
@@ -100,30 +130,43 @@ export async function reformulateTextAction(input: ReformulateTextInput): Promis
 
 export async function researchContextualAction(input: ResearchContextualInput): Promise<ResearchContextualOutput> {
   try {
+    // Language is now part of ResearchContextualInput
     const result = await researchContextualFlow(input);
+    const defaultError = input.language === 'fr'
+        ? "Échec de la recherche contextuelle : Réponse invalide de l'IA."
+        : "Failed to perform contextual research: Invalid response from AI.";
     if (!result || typeof result.researchResult !== 'string') {
       console.error("Invalid result from researchContextualFlow:", result);
-      return { researchResult: "Failed to perform contextual research: Invalid response from AI." };
+      return { researchResult: defaultError };
     }
     return result;
   } catch (error) {
     console.error("Error in researchContextualAction:", error);
-    return { researchResult: `Failed to perform contextual research: ${error instanceof Error ? error.message : "Unknown error"}` };
+    const errorMessage = input.language === 'fr'
+        ? `Échec de la recherche contextuelle : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+        : `Failed to perform contextual research: ${error instanceof Error ? error.message : "Unknown error"}`;
+    return { researchResult: errorMessage };
   }
 }
 
 export async function researchManipulationAction(input: ResearchManipulationInput): Promise<ResearchManipulationOutput> {
   try {
+    // Language is now part of ResearchManipulationInput
     const result = await researchManipulationFlow(input);
+    const defaultError = input.language === 'fr'
+        ? "Échec de l'analyse de manipulation : Réponse invalide de l'IA."
+        : "Failed to perform manipulation research: Invalid response from AI.";
     if (!result || typeof result.manipulationInsights !== 'string') {
       console.error("Invalid result from researchManipulationFlow:", result);
-      return { manipulationInsights: "Failed to perform manipulation research: Invalid response from AI." };
+      return { manipulationInsights: defaultError };
     }
     return result;
   } catch (error) {
     console.error("Error in researchManipulationAction:", error);
-    return { manipulationInsights: `Failed to perform manipulation research: ${error instanceof Error ? error.message : "Unknown error"}` };
+    const errorMessage = input.language === 'fr'
+        ? `Échec de l'analyse de manipulation : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+        : `Failed to perform manipulation research: ${error instanceof Error ? error.message : "Unknown error"}`;
+    return { manipulationInsights: errorMessage };
   }
 }
-
     

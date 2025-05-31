@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { FileText, UploadCloud, Sparkles, Search, ShieldAlert, Telescope, MessageSquareText } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { FileText, UploadCloud, Sparkles, Telescope, MessageSquareText } from "lucide-react";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 interface InputPanelProps {
@@ -21,7 +21,46 @@ interface InputPanelProps {
   isSearchingContextual: boolean;
   handleManipulationSearch: () => Promise<void>;
   isSearchingManipulation: boolean;
+  currentLanguage: string;
 }
+
+const panelLabels: Record<string, Record<string, string>> = {
+  fr: {
+    mainAnalysisTitle: "Saisie du Texte & Recherche Contextuelle",
+    mainAnalysisDescription: "Entrez le texte pour l'analyse cognitive principale, ou utilisez le champ ci-dessous pour des recherches contextuelles spécifiques.",
+    mainAnalysisTextLabel: "Texte pour Analyse Cognitive Principale :",
+    mainAnalysisPlaceholder: "Collez votre texte, écrivez directement, ou chargez un fichier .txt ci-dessous...",
+    uploadFileLabel: "Ou chargez un fichier .txt pour l'analyse principale :",
+    analyzeButtonText: "Lancer l'Analyse Initiale du Discours (sur le texte ci-dessus)",
+    analyzingButtonText: "Analyse Initiale en cours...",
+    researchQueryLabel: "Termes pour Recherche Contextuelle / Analyse de Manipulation :",
+    researchQueryPlaceholder: "Entrez un sujet, une phrase clé, ou un extrait de texte pour une recherche spécifique...",
+    contextualSearchButton: "Recherche Contextuelle (sur le terme ci-dessus)",
+    contextualSearchingButton: "Recherche...",
+    manipulationSearchButton: "Analyse de Manipulation (sur le terme ci-dessus)",
+    manipulationSearchingButton: "Analyse Sonar...",
+    unsupportedFile: "Veuillez charger un fichier .txt uniquement.",
+    fileReadError: "Erreur lors de la lecture du fichier.",
+  },
+  en: {
+    mainAnalysisTitle: "Text Input & Contextual Research",
+    mainAnalysisDescription: "Enter the text for the main cognitive analysis, or use the field below for specific contextual research.",
+    mainAnalysisTextLabel: "Text for Main Cognitive Analysis:",
+    mainAnalysisPlaceholder: "Paste your text, write directly, or upload a .txt file below...",
+    uploadFileLabel: "Or upload a .txt file for main analysis:",
+    analyzeButtonText: "Start Initial Discourse Analysis (on the text above)",
+    analyzingButtonText: "Initial Analysis in progress...",
+    researchQueryLabel: "Terms for Contextual Research / Manipulation Analysis:",
+    researchQueryPlaceholder: "Enter a topic, key phrase, or text snippet for specific research...",
+    contextualSearchButton: "Contextual Research (on the term above)",
+    contextualSearchingButton: "Searching...",
+    manipulationSearchButton: "Manipulation Analysis (on the term above)",
+    manipulationSearchingButton: "Sonar Analysis...",
+    unsupportedFile: "Please upload a .txt file only.",
+    fileReadError: "Error reading the file.",
+  }
+};
+
 
 export function InputPanel({ 
   inputText, 
@@ -33,8 +72,11 @@ export function InputPanel({
   handleContextualSearch,
   isSearchingContextual,
   handleManipulationSearch,
-  isSearchingManipulation
+  isSearchingManipulation,
+  currentLanguage
 }: InputPanelProps) {
+  const labels = panelLabels[currentLanguage] || panelLabels.fr;
+
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -44,10 +86,10 @@ export function InputPanel({
             setInputText(text);
         } catch (error) {
             console.error("Error reading file:", error);
-            alert("Erreur lors de la lecture du fichier.");
+            alert(labels.fileReadError);
         }
       } else {
-        alert("Veuillez charger un fichier .txt uniquement.");
+        alert(labels.unsupportedFile);
       }
       event.target.value = "";
     }
@@ -60,16 +102,16 @@ export function InputPanel({
       <CardHeader>
         <CardTitle className="font-headline text-2xl flex items-center gap-2 text-primary">
           <FileText className="h-6 w-6" />
-          Saisie du Texte & Recherche Contextuelle
+          {labels.mainAnalysisTitle}
         </CardTitle>
-        <CardDescription>Entrez le texte pour l'analyse cognitive principale, ou utilisez le champ ci-dessous pour des recherches contextuelles spécifiques.</CardDescription>
+        <CardDescription>{labels.mainAnalysisDescription}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="text-input" className="text-lg font-semibold text-foreground/90">Texte pour Analyse Cognitive Principale :</Label>
+          <Label htmlFor="text-input" className="text-lg font-semibold text-foreground/90">{labels.mainAnalysisTextLabel}</Label>
           <Textarea
             id="text-input"
-            placeholder="Collez votre texte, écrivez directement, ou chargez un fichier .txt ci-dessous..."
+            placeholder={labels.mainAnalysisPlaceholder}
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             rows={10}
@@ -79,7 +121,7 @@ export function InputPanel({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="file-upload" className="text-lg font-semibold text-foreground/90">Ou chargez un fichier .txt pour l'analyse principale :</Label>
+          <Label htmlFor="file-upload" className="text-lg font-semibold text-foreground/90">{labels.uploadFileLabel}</Label>
           <div className="flex items-center gap-3 p-3 border border-dashed border-border rounded-lg bg-muted/20 hover:border-accent transition-colors">
             <UploadCloud className="h-8 w-8 text-muted-foreground" />
             <Input
@@ -102,21 +144,21 @@ export function InputPanel({
           {isAnalyzing ? (
             <>
               <LoadingSpinner size="sm" />
-              <span className="ml-2">Analyse Initiale en cours...</span>
+              <span className="ml-2">{labels.analyzingButtonText}</span>
             </>
           ) : (
             <>
               <Sparkles className="mr-2 h-5 w-5" />
-              Lancer l'Analyse Initiale du Discours (sur le texte ci-dessus)
+              {labels.analyzeButtonText}
             </>
           )}
         </Button>
 
         <div className="border-t border-border/30 pt-6 space-y-4">
-            <Label htmlFor="research-query-input" className="text-lg font-semibold text-foreground/90">Termes pour Recherche Contextuelle / Analyse de Manipulation :</Label>
+            <Label htmlFor="research-query-input" className="text-lg font-semibold text-foreground/90">{labels.researchQueryLabel}</Label>
             <Input
                 id="research-query-input"
-                placeholder="Entrez un sujet, une phrase clé, ou un extrait de texte pour une recherche spécifique..."
+                placeholder={labels.researchQueryPlaceholder}
                 value={researchQueryText}
                 onChange={(e) => setResearchQueryText(e.target.value)}
                 className="border-2 border-input focus:border-accent transition-colors duration-300 shadow-inner rounded-lg p-3 bg-background/80 text-base"
@@ -132,12 +174,12 @@ export function InputPanel({
                     {isSearchingContextual ? (
                     <>
                         <LoadingSpinner size="sm" />
-                        <span className="ml-2">Recherche...</span>
+                        <span className="ml-2">{labels.contextualSearchingButton}</span>
                     </>
                     ) : (
                     <>
                         <Telescope className="mr-2 h-4 w-4" />
-                        Recherche Contextuelle (sur le terme ci-dessus)
+                        {labels.contextualSearchButton}
                     </>
                     )}
                 </Button>
@@ -150,12 +192,12 @@ export function InputPanel({
                     {isSearchingManipulation ? (
                     <>
                         <LoadingSpinner size="sm" />
-                        <span className="ml-2">Analyse Sonar...</span>
+                        <span className="ml-2">{labels.manipulationSearchingButton}</span>
                     </>
                     ) : (
                     <>
                         <MessageSquareText className="mr-2 h-4 w-4" />
-                        Analyse de Manipulation (sur le terme ci-dessus)
+                        {labels.manipulationSearchButton}
                     </>
                     )}
                 </Button>

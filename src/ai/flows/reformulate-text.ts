@@ -18,6 +18,7 @@ import type { PromptsData } from '@/app/config/prompts/page';
 const ReformulateTextInputSchema = z.object({
   text: z.string().describe('The text to reformulate.'),
   style: z.string().describe('The desired reformulation style (e.g., "neutral", "messianic", "paranoid", "analytical_rhetoric", "simplified_eli5", "poetic_metaphoric", "technical_detailed").'),
+  language: z.string().default('fr').describe('The language for the response (e.g., "fr", "en").'),
 });
 export type ReformulateTextInput = z.infer<typeof ReformulateTextInputSchema>;
 
@@ -29,47 +30,48 @@ export type ReformulateTextOutput = z.infer<typeof ReformulateTextOutputSchema>;
 
 // This configuration is hardcoded to match the structure in `public/prompts.json -> reformulationPrompts`.
 // Increased length/detail instruction added to each system_prompt_template.
+// Added language instruction to system_prompt_template.
 const reformulationPromptsConfig: PromptsData['reformulationPrompts'] = {
   neutral: {
     name: 'Neutral Reformulation',
     description: 'Reformulate text to be neutral and objective.',
-    system_prompt_template: "Tu es un agent de désactivation cognitive. Ta mission est de reformuler un texte en supprimant toute charge émotionnelle, idéologique ou persuasive, tout en préservant le sens, les faits et la structure logique. Utilise un style factuel, journalistique et neutre.\n\nInstructions :\n- Supprime les modalisateurs affectifs ou subjectifs\n- Évite les jugements de valeur, les exagérations, les appels à l'émotion\n- Si ambiguïté ou opinion implicite : signaler \"[ambigü]\"\n\nFormat : texte reformulé uniquement, sans explication.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
+    system_prompt_template: "Tu es un agent de désactivation cognitive. Ta mission est de reformuler un texte en supprimant toute charge émotionnelle, idéologique ou persuasive, tout en préservant le sens, les faits et la structure logique. Utilise un style factuel, journalistique et neutre. Ta réponse doit être en {{language}}.\n\nInstructions :\n- Supprime les modalisateurs affectifs ou subjectifs\n- Évite les jugements de valeur, les exagérations, les appels à l'émotion\n- Si ambiguïté ou opinion implicite : signaler \"[ambigü]\"\n\nFormat : texte reformulé uniquement, sans explication.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
     user_prompt_template: "Neutralise le texte suivant de manière exhaustive, détaillée et approfondie :\n{text}"
   },
   messianic: {
     name: 'Messianic Amplification',
     description: 'Amplify text with a prophetic and transformative tone.',
-    system_prompt_template: "Tu es une voix visionnaire, porteuse d'un message qui transcende le quotidien. Reformule le texte en amplifiant sa dimension prophétique, inspirante et transformatrice, à la manière d'un manifeste pour un changement radical.\n\nLigne directrice :\n- Utilise des métaphores puissantes, des anaphores et une syntaxe rythmée\n- Mets en scène l'urgence, l'éveil, la métamorphose\n- Mobilise les archétypes collectifs (avenir, lumière, renaissance)\n\nFormat : texte reformulé uniquement, sans balises ni commentaire.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
+    system_prompt_template: "Tu es une voix visionnaire, porteuse d'un message qui transcende le quotidien. Reformule le texte en amplifiant sa dimension prophétique, inspirante et transformatrice, à la manière d'un manifeste pour un changement radical. Ta réponse doit être en {{language}}.\n\nLigne directrice :\n- Utilise des métaphores puissantes, des anaphores et une syntaxe rythmée\n- Mets en scène l'urgence, l'éveil, la métamorphose\n- Mobilise les archétypes collectifs (avenir, lumière, renaissance)\n\nFormat : texte reformulé uniquement, sans balises ni commentaire.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
     user_prompt_template: "Réécris ce message comme s'il annonçait un tournant majeur pour l'humanité, de façon complète, détaillée, approfondie et substantielle :\n{text}"
   },
   paranoid: {
     name: 'Paranoid Conspiracy',
     description: 'Reformulate text to imply hidden agendas and suspicion.',
-    system_prompt_template: "Tu es un analyste sceptique à l'extrême. Reformule le texte en insinuant des intentions cachées, des mécanismes d'influence dissimulés, et un sentiment de surveillance diffuse. Utilise un ton soupçonneux, indirect, sans affirmer ni délirer.\n\nConsignes :\n- Privilégie les tournures comme \"certains pensent que…\", \"il semblerait que…\", \"selon des sources...\"\n- Évite les accusations directes\n- Crée un climat de doute mais sans rompre la crédibilité\n\nFormat : texte reformulé uniquement, dans un style sobre mais anxiogène, complet, détaillé et approfondi.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
+    system_prompt_template: "Tu es un analyste sceptique à l'extrême. Reformule le texte en insinuant des intentions cachées, des mécanismes d'influence dissimulés, et un sentiment de surveillance diffuse. Utilise un ton soupçonneux, indirect, sans affirmer ni délirer. Ta réponse doit être en {{language}}.\n\nConsignes :\n- Privilégie les tournures comme \"certains pensent que…\", \"il semblerait que…\", \"selon des sources...\"\n- Évite les accusations directes\n- Crée un climat de doute mais sans rompre la crédibilité\n\nFormat : texte reformulé uniquement, dans un style sobre mais anxiogène, complet, détaillé et approfondi.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
     user_prompt_template: "Réécris ce texte comme s'il cachait un agenda secret ou une opération de contrôle, avec force détails, une analyse approfondie et un développement substantiel :\n{text}"
   },
   analytical_rhetoric: {
     name: 'Rhetorical Analysis',
     description: 'Analyze text for rhetorical strategies.',
-    system_prompt_template: "Tu es un analyste expert en rhétorique cognitive. Ton rôle est d'identifier dans un texte les figures de style, leviers émotionnels ou argumentatifs, et les stratégies d'influence implicites.\n\nStructure de réponse attendue :\n\n| Stratégie | Extrait | Effet cognitif | Intention perçue |\n|-----------|---------|----------------|------------------|\n\nExemples de stratégies : appel à la peur, dichotomie, autorité, exagération, généralisation, analogie.\n\nAnalyse précise, pas d'interprétation morale. Sois complet, détaillé et approfondi.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir l'analyse la plus approfondie possible.",
+    system_prompt_template: "Tu es un analyste expert en rhétorique cognitive. Ton rôle est d'identifier dans un texte les figures de style, leviers émotionnels ou argumentatifs, et les stratégies d'influence implicites. Ta réponse doit être en {{language}}.\n\nStructure de réponse attendue :\n\n| Stratégie | Extrait | Effet cognitif | Intention perçue |\n|-----------|---------|----------------|------------------|\n\nExemples de stratégies : appel à la peur, dichotomie, autorité, exagération, généralisation, analogie.\n\nAnalyse précise, pas d'interprétation morale. Sois complet, détaillé et approfondi.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir l'analyse la plus approfondie possible.",
     user_prompt_template: "Fais une analyse rhétorique complète, détaillée, approfondie et substantielle du texte suivant :\n{text}"
   },
   simplified_eli5: {
     name: "Simplifié (ELI5)",
     description: "Expliquer comme si j'avais 5 ans. Utile pour vulgariser des concepts complexes.",
-    system_prompt_template: "Tu es un expert en vulgarisation. Reformule le texte suivant comme si tu l'expliquais à un enfant de 5 ans, de manière très simple, claire, avec des analogies faciles à comprendre, mais sans perdre l'idée principale.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
+    system_prompt_template: "Tu es un expert en vulgarisation. Reformule le texte suivant comme si tu l'expliquais à un enfant de 5 ans, de manière très simple, claire, avec des analogies faciles à comprendre, mais sans perdre l'idée principale. Ta réponse doit être en {{language}}.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
     user_prompt_template: "Simplifie ce texte (ELI5) de manière exhaustive, détaillée et approfondie :\n{text}"
   },
   poetic_metaphoric: {
     name: "Poétique / Métaphorique",
     description: "Reformuler avec un langage imagé, lyrique.",
-    system_prompt_template: "Tu es un poète et un maître des métaphores. Reformule le texte suivant avec un langage riche, imagé, lyrique et plein de figures de style. Transforme les idées en évocations poétiques.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
+    system_prompt_template: "Tu es un poète et un maître des métaphores. Reformule le texte suivant avec un langage riche, imagé, lyrique et plein de figures de style. Transforme les idées en évocations poétiques. Ta réponse doit être en {{language}}.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
     user_prompt_template: "Réécris ce texte dans un style poétique et métaphorique, de façon complète, détaillée, approfondie et substantielle :\n{text}"
   },
   technical_detailed: {
     name: "Technique / Scientifique Détaillé",
     description: "Utiliser un jargon précis, fournir des détails techniques.",
-    system_prompt_template: "Tu es un expert scientifique et technique. Reformule le texte suivant en utilisant un langage précis, un jargon technique approprié (si pertinent), et en fournissant des détails et des explications approfondies. Adopte une perspective rigoureuse et analytique.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
+    system_prompt_template: "Tu es un expert scientifique et technique. Reformule le texte suivant en utilisant un langage précis, un jargon technique approprié (si pertinent), et en fournissant des détails et des explications approfondies. Adopte une perspective rigoureuse et analytique. Ta réponse doit être en {{language}}.\n\nIMPORTANT : Ta réponse doit être aussi longue, détaillée, complète et substantielle que possible, explorant toutes les facettes de la demande. Ne résume pas ou ne tronque pas tes pensées prématurément. Vise une utilisation maximale des tokens pour fournir la reformulation la plus approfondie possible.",
     user_prompt_template: "Reformule ce texte dans un style technique et scientifique détaillé, avec une analyse approfondie et un développement substantiel :\n{text}"
   }
 };
@@ -87,12 +89,15 @@ const reformulateTextFlow = ai.defineFlow(
     outputSchema: ReformulateTextOutputSchema,
   },
   async (input) => {
-    const { text, style } = input;
+    const { text, style, language } = input;
 
     if (text.length > MAX_TEXT_LENGTH) {
       console.warn(`Reformulation input text too long: ${text.length} characters. Max: ${MAX_TEXT_LENGTH}`);
+      const errorMsg = language === 'fr' 
+        ? `Erreur : Le texte d'entrée est trop long (${text.length} caractères). Le maximum autorisé est de ${MAX_TEXT_LENGTH} caractères.`
+        : `Error: Input text is too long (${text.length} chars). Maximum allowed is ${MAX_TEXT_LENGTH} characters.`;
       return {
-        reformulatedText: `Error: Input text is too long (${text.length} chars). Maximum allowed is ${MAX_TEXT_LENGTH} characters. Please provide a shorter text or contact support if this limit is too restrictive.`,
+        reformulatedText: errorMsg,
         styleUsed: style,
       };
     }
@@ -102,37 +107,39 @@ const reformulateTextFlow = ai.defineFlow(
 
     if (!selectedPrompts || !selectedPrompts.system_prompt_template || !selectedPrompts.user_prompt_template) {
       console.error(`Reformulation style "${style}" not found or improperly configured in reformulationPromptsConfig. Available keys: ${Object.keys(reformulationPromptsConfig).join(', ')}`);
+      const errorMsg = language === 'fr'
+        ? `Erreur : Le style de reformulation "${style}" n'est pas configuré ou les prompts sont manquants.`
+        : `Error: Reformulation style "${style}" is not configured or prompts are missing.`;
       return {
-        reformulatedText: `Error: Reformulation style "${style}" is not configured or prompts are missing. Please check flow configuration.`,
+        reformulatedText: errorMsg,
         styleUsed: style,
       };
     }
 
-    const systemPromptContent = selectedPrompts.system_prompt_template;
-    // Replace {text} placeholder in user_prompt_template with the actual text
+    const systemPromptContentWithLang = selectedPrompts.system_prompt_template.replace('{{language}}', language);
     const userPromptContent = selectedPrompts.user_prompt_template.replace('{text}', text);
       
-    console.log(`Reformulating text for style "${style}". User prompt length: ${userPromptContent.length}. System prompt length: ${systemPromptContent.length}`);
+    console.log(`Reformulating text for style "${style}" in language "${language}". User prompt length: ${userPromptContent.length}. System prompt length: ${systemPromptContentWithLang.length}`);
     console.log(`User prompt content (first 200 chars): ${userPromptContent.substring(0,200)}...`);
-    console.log(`System prompt content (first 200 chars): ${systemPromptContent.substring(0,200)}...`);
+    console.log(`System prompt content (first 200 chars): ${systemPromptContentWithLang.substring(0,200)}...`);
 
     try {
       const {text: reformulatedTextResult} = await ai.generate({
-        prompt: [{text: userPromptContent}], // User prompt as Part[]
-        systemInstruction: [{text: systemPromptContent}], // System instruction as Part[]
+        prompt: [{text: userPromptContent}],
+        systemInstruction: [{text: systemPromptContentWithLang}],
         output: {format: 'text'},
-        config: {temperature: 0.7} // Temperature can be adjusted for more/less creative outputs
-                                     // Higher temperature (e.g., 0.8-1.0) might lead to more verbose/creative but potentially less focused output.
-                                     // Lower temperature (e.g., 0.2-0.5) for more deterministic/focused output.
-                                     // No explicit maxOutputTokens is set here; relying on model defaults and prompt strength for length.
+        config: {temperature: 0.7}
       });
       
       const reformulatedText = reformulatedTextResult;
 
       if (!reformulatedText || reformulatedText.trim() === "") {
-        console.warn(`LLM returned empty or no text for reformulation style "${style}". Input text length: ${text.length}`);
+        console.warn(`LLM returned empty or no text for reformulation style "${style}", lang "${language}". Input text length: ${text.length}`);
+        const errorMsg = language === 'fr'
+            ? `Le modèle n'a pas fourni de reformulation pour le style "${style}".`
+            : `The model did not provide a reformulation for the style "${style}".`;
         return {
-          reformulatedText: `The model did not provide a reformulation for the style "${style}". This may happen with certain inputs or model limitations. Please try a different input or style.`,
+          reformulatedText: errorMsg,
           styleUsed: style,
         };
       }
@@ -142,8 +149,8 @@ const reformulateTextFlow = ai.defineFlow(
         styleUsed: style,
       };
     } catch (error: any) {
-      console.error(`Error during reformulation for style "${style}":`, error);
-      let errorMessage = "Unknown error during reformulation.";
+      console.error(`Error during reformulation for style "${style}", lang "${language}":`, error);
+      let errorMessage = language === 'fr' ? "Erreur inconnue durant la reformulation." : "Unknown error during reformulation.";
       if (error instanceof Error) {
         errorMessage = error.message;
         if ((error as any).cause) {
@@ -155,16 +162,17 @@ const reformulateTextFlow = ai.defineFlow(
         errorMessage = error;
       }
       
-      console.error(`Problematic input text for style "${style}" (first 200 chars): ${text.substring(0,200)}...`);
-      console.error(`Problematic system prompt for style "${style}" (first 200 chars): ${systemPromptContent.substring(0,200)}...`);
-      console.error(`Problematic user prompt template for style "${style}" (first 200 chars): ${selectedPrompts.user_prompt_template.substring(0,200)}...`);
-
+      console.error(`Problematic input text for style "${style}", lang "${language}" (first 200 chars): ${text.substring(0,200)}...`);
+      console.error(`Problematic system prompt for style "${style}", lang "${language}" (first 200 chars): ${systemPromptContentWithLang.substring(0,200)}...`);
+      
+      const finalErrorMsg = language === 'fr'
+        ? `Échec de la reformulation du texte avec le style "${style}": ${errorMessage}.`
+        : `Failed to reformulate text with style "${style}": ${errorMessage}.`;
       return {
-        reformulatedText: `Failed to reformulate text with style "${style}": ${errorMessage}. Please check the console for more details.`,
+        reformulatedText: finalErrorMsg,
         styleUsed: style,
       };
     }
   }
 );
-
     

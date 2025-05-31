@@ -30,6 +30,7 @@ const ClassifyCognitiveCategoriesInputSchema = z.object({
   cognitiveBiases: z.array(z.string()).describe('List of cognitive biases found.'),
   unverifiableFacts: z.array(z.string()).describe('List of unverifiable facts found.'),
   originalText: z.string().describe('The original text submitted for analysis, used for contextual understanding.'),
+  language: z.string().default('fr').describe('The language for the response (e.g., "fr", "en"). Consider this for cultural nuances in analysis if possible.'),
 });
 export type ClassifyCognitiveCategoriesInput = z.infer<typeof ClassifyCognitiveCategoriesInputSchema>;
 
@@ -49,6 +50,7 @@ const classifyCognitiveCategoriesPrompt = ai.definePrompt({
   input: {schema: ClassifyCognitiveCategoriesInputSchema},
   output: {schema: ClassifyCognitiveCategoriesOutputSchema},
   prompt: `You are an expert in cognitive science, rhetoric, and content analysis.
+  Your response should be in {{language}}. When performing the analysis, consider the cultural and linguistic context associated with the {{language}} language.
   Given the following elements detected in a text (summary of discursive elements, rhetorical techniques, cognitive biases, unverifiable facts) and the original text itself, your task is to provide a thorough and detailed analysis:
 
   1.  **Overall Content Classification**:
@@ -108,12 +110,15 @@ const classifyCognitiveCategoriesFlow = ai.defineFlow(
       };
     } catch (error) {
        console.error("Error in classifyCognitiveCategoriesFlow:", error);
+       const lang = input.language || 'fr';
+       const reasoningMessage = lang === 'fr' 
+         ? `Échec de la classification des catégories cognitives: ${error instanceof Error ? error.message : String(error)}`
+         : `Failed to classify cognitive categories: ${error instanceof Error ? error.message : String(error)}`;
        return {
          classifiedCategories: [],
-         overallClassification: { type: 'other', score: 0, reasoning: `Failed to classify cognitive categories: ${error instanceof Error ? error.message : String(error)}` }
+         overallClassification: { type: 'other', score: 0, reasoning: reasoningMessage }
        };
     }
   }
 );
-
     

@@ -14,6 +14,7 @@ import {z} from 'genkit';
 
 const AnalyzeTextInputSchema = z.object({
   text: z.string().describe('The text to analyze.'),
+  language: z.string().default('fr').describe('The language of the text and for the response (e.g., "fr", "en").'),
 });
 export type AnalyzeTextInput = z.infer<typeof AnalyzeTextInputSchema>;
 
@@ -35,6 +36,7 @@ const analyzeTextPrompt = ai.definePrompt({
   output: {schema: AnalyzeTextOutputSchema},
   prompt: `You are an expert in discourse analysis. Your task is to identify potential discursive elements in the provided text.
 List them factually and neutrally. The context, intent, and manipulative intensity will be assessed in a subsequent step.
+The input text is in {{language}} and your response should also be in {{language}}.
 
 Text: {{{text}}}
 
@@ -42,7 +44,7 @@ Provide a comprehensive and detailed summary of your findings.
 Also, provide structured lists for the following categories, ensuring each list is well-populated if elements are found and that explanations are substantial:
 - rhetoricalTechniques: Identify various rhetorical techniques used (e.g., metaphors, irony, hyperbole, appeals to emotion, rhetorical questions, etc.). Provide substantial examples from the text for each identified technique.
 - cognitiveBiases: Identify any potential cognitive biases suggested by the text or that the text might exploit in the reader (e.g., confirmation bias, anchoring, framing effect, availability heuristic). Explain briefly how each identified bias might manifest or be triggered by the text.
-- unverifiableFacts: Identify statements *presented as objective factual claims* within the text that are inherently difficult or impossible to verify empirically by a typical reader. These must have the appearance of factuality and be distinct from poetic expressions, literary devices, opinions, clearly subjective statements, hyperbolic rhetorical flourishes, or common knowledge. Focus *only* on claims that, if taken literally as factual, would require external proof that is not provided and is hard to obtain. For each statement, provide the specific statement verbatim followed by a hyphen and a brief (1-sentence) justification of why it is considered unverifiable in this context. Example format: "The moon is made of green cheese - This claim is factually incorrect and lacks any scientific basis or verifiability." If the text is purely poetic or artistic and contains no such claims, this list should be empty.
+- unverifiableFacts: Identify statements *presented as objective factual claims* within the text that are inherently difficult or impossible to verify empirically by a typical reader. Apply critical thinking and nuance; avoid listing common knowledge, easily deducible statements, or clearly subjective opinions not disguised as objective fact. These must have the appearance of factuality and be distinct from poetic expressions, literary devices, opinions, clearly subjective statements, hyperbolic rhetorical flourishes, or common knowledge. Focus *only* on claims that, if taken literally as factual, would require external proof that is not provided and is hard to obtain. For each statement, provide the specific statement verbatim followed by a hyphen and a brief (1-sentence) justification of why it is considered unverifiable in this context. Example format: "The moon is made of green cheese - This claim is factually incorrect and lacks any scientific basis or verifiability." If the text is purely poetic or artistic and contains no such claims, this list should be empty.
 
 Ensure your output strictly matches the output schema: {summary: string, rhetoricalTechniques: string[], cognitiveBiases: string[], unverifiableFacts: string[]}.
 IMPORTANT: Your response for all fields (summary, techniques, biases, facts) should be as long, detailed, comprehensive, and substantial as possible, exploring all facets of the request. Do not summarize or truncate your thoughts prematurely. Aim for maximum token utilization to provide the deepest possible analysis.`,
@@ -65,8 +67,10 @@ const analyzeTextFlow = ai.defineFlow(
       };
     } catch (error) {
       console.error("Error in analyzeTextFlow:", error);
+      const lang = input.language || 'fr';
+      const errorMessage = lang === 'fr' ? "Échec de l'analyse initiale du discours." : "Failed to perform initial discourse analysis.";
       return {
-        summary: "Failed to perform initial discourse analysis.",
+        summary: errorMessage,
         rhetoricalTechniques: [],
         cognitiveBiases: [],
         unverifiableFacts: [],
@@ -74,5 +78,4 @@ const analyzeTextFlow = ai.defineFlow(
     }
   }
 );
-
     
