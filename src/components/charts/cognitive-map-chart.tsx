@@ -69,7 +69,7 @@ export function CognitiveMapChart({ analysisResults, currentLanguage }: Cognitiv
 
 
   return (
-    <Card className="shadow-xl col-span-1 md:col-span-2 animate-fadeIn bg-card/80 backdrop-blur-sm border-primary/20">
+    <Card className="shadow-xl animate-fadeIn bg-card/80 backdrop-blur-sm border-primary/20">
       <CardHeader>
         <CardTitle className="font-headline text-2xl flex items-center gap-2 text-primary">
           <ScanText className="h-6 w-6" />
@@ -81,7 +81,7 @@ export function CognitiveMapChart({ analysisResults, currentLanguage }: Cognitiv
         {chartData.length === 0 ? (
           <p className="text-center text-muted-foreground py-8 italic">{labels.noData}</p>
         ) : (
-          <div className="h-[300px] w-full">
+          <div className="h-[200px] w-full"> {/* Reduced height */}
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -112,3 +112,6 @@ export function CognitiveMapChart({ analysisResults, currentLanguage }: Cognitiv
     </Card>
   );
 }
+
+
+    

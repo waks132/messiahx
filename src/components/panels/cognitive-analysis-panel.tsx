@@ -98,7 +98,7 @@ const ItemList = ({ title, items, icon, itemClassName, tooltipText, currentLangu
       </CardHeader>
       <CardContent>
         {items && items.length > 0 ? (
-          <ScrollArea className="h-48 pr-3"> {/* Increased height */}
+          <ScrollArea className="h-60 pr-3"> {/* Increased height */}
             <ul className="space-y-2.5"> {/* Increased spacing */}
               {items.map((item, index) => {
                 if (isUnverifiableFact) {
@@ -273,7 +273,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Changed from lg:grid-cols-3 */}
         <ItemList 
           title={labels.rhetoricalTechniques}
           items={analysisResults.rhetoricalTechniques || []}
@@ -306,4 +306,6 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
     </div>
   );
 }
+    
+
     
