@@ -70,13 +70,12 @@ const reformulateTextFlow = ai.defineFlow(
     const { text, style } = input;
 
     const selectedStyleKey = style as keyof typeof reformulationPromptsConfig;
-    // Ensure reformulationPromptsConfig is treated as potentially undefined for safety, though hardcoded here.
     const selectedPrompts = reformulationPromptsConfig ? reformulationPromptsConfig[selectedStyleKey] : undefined;
 
     if (!selectedPrompts || !selectedPrompts.system_prompt_template || !selectedPrompts.user_prompt_template) {
       console.error(`Reformulation style "${style}" not found or improperly configured in reformulationPromptsConfig.`);
       return {
-        reformulatedText: `Error: Reformulation style "${style}" is not configured or prompts are missing. Please check flow configuration. Veuilez fournir une réponse détaillée, complète, substantielle et bien développée.`,
+        reformulatedText: `Error: Reformulation style "${style}" is not configured or prompts are missing. Please check flow configuration. Veuillez fournir une réponse détaillée, complète, substantielle et bien développée.`,
         styleUsed: style,
       };
     }
@@ -84,24 +83,21 @@ const reformulateTextFlow = ai.defineFlow(
     try {
       const systemPromptContent = selectedPrompts.system_prompt_template + " Assurez-vous de fournir une réponse complète, détaillée, substantielle et bien développée.";
       const userPromptContent = selectedPrompts.user_prompt_template.replace('{text}', text);
-
-      // Corrected structure for ai.generate prompt
-      const result = await ai.generate({
-        prompt: [
-          { role: 'system', content: [{text: systemPromptContent}] },
-          { role: 'user', content: [{text: userPromptContent}] },
-        ],
-        // model: 'googleai/gemini-1.5-flash-latest', // Ensure correct model or use default
+      
+      // Using systemInstruction for the system prompt
+      const {text: reformulatedTextResult} = await ai.generate({
+        prompt: [{role: 'user', content: [{text: userPromptContent}]}], // User prompt remains in the main prompt field
+        systemInstruction: [{text: systemPromptContent}], // System prompt moved to systemInstruction
         output: {format: 'text'}, 
         config: { temperature: 0.7 } 
       });
       
-      const reformulatedText = result.text;
+      const reformulatedText = reformulatedTextResult;
 
       if (!reformulatedText || reformulatedText.trim() === "") {
         console.warn(`LLM returned empty or no text for reformulation style "${style}". Input text length: ${text.length}`);
         return {
-          reformulatedText: `The model did not provide a reformulation for the style "${style}". This may happen with certain inputs or model limitations. Please try a different style or text. Veuilez fournir une réponse détaillée, complète, substantielle et bien développée.`,
+          reformulatedText: `The model did not provide a reformulation for the style "${style}". This may happen with certain inputs or model limitations. Veuillez fournir une réponse détaillée, complète, substantielle et bien développée.`,
           styleUsed: style,
         };
       }
@@ -112,8 +108,13 @@ const reformulateTextFlow = ai.defineFlow(
       };
     } catch (error: any) {
       console.error(`Error during reformulation for style "${style}":`, error);
+      // Ensure the error message is captured and returned
+      let errorMessage = error.message || "Unknown error";
+      if (error.cause) { // Genkit errors often have a cause
+        errorMessage = `${errorMessage} - Cause: ${JSON.stringify(error.cause)}`;
+      }
       return {
-        reformulatedText: `Failed to reformulate text with style "${style}": ${error.message}. Veuilez fournir une réponse détaillée, complète, substantielle et bien développée.`,
+        reformulatedText: `Failed to reformulate text with style "${style}": ${errorMessage}. Veuillez fournir une réponse détaillée, complète, substantielle et bien développée.`,
         styleUsed: style,
       };
     }

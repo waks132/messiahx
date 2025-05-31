@@ -10,6 +10,8 @@ import { ParanoidReadingPanel } from "@/components/panels/paranoid-reading-panel
 import { CognitiveClassificationPanel } from "@/components/panels/cognitive-classification-panel";
 import { ReformulationPanel } from "@/components/panels/reformulation-panel";
 import PromptConfigPage from "@/app/config/prompts/page";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   analyzeTextAction, 
   generateCriticalSummaryAction, 
@@ -29,7 +31,7 @@ import type { ResearchManipulationInput, ResearchManipulationOutput } from '@/ai
 
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Quote, Drama, BrainCircuit, SearchCheck, SlidersHorizontal, PenTool, Settings, Search, ShieldAlert } from 'lucide-react';
+import { FileText, Quote, Drama, BrainCircuit, SearchCheck, SlidersHorizontal, PenTool, Settings, Search, ShieldAlert, MessageSquareText, Telescope } from 'lucide-react';
 
 const initialAnalysisResults: AnalyzeTextOutput = {
   summary: "",
@@ -64,7 +66,6 @@ export default function CognitiveMapperClient() {
   const [reformulationResult, setReformulationResult] = useState<ReformulateTextOutput | null>(null);
   const [isReformulating, setIsReformulating] = useState<boolean>(false);
 
-  // State for Perplexity-like searches
   const [isSearchingContextual, setIsSearchingContextual] = useState<boolean>(false);
   const [contextualSearchResult, setContextualSearchResult] = useState<ResearchContextualOutput | null>(null);
   const [isSearchingManipulation, setIsSearchingManipulation] = useState<boolean>(false);
@@ -92,6 +93,8 @@ export default function CognitiveMapperClient() {
     setClassificationResult(initialClassificationResult); 
     setReformulationInputText(inputText); 
     setReformulationResult(null); 
+    setContextualSearchResult(null);
+    setManipulationSearchResult(null);
 
     try {
       const results = await analyzeTextAction({ text: inputText });
@@ -216,17 +219,18 @@ export default function CognitiveMapperClient() {
       return;
     }
     setIsSearchingContextual(true);
-    setContextualSearchResult(null);
+    setContextualSearchResult(null); // Clear previous results
     try {
       const result = await researchContextualAction({ text: inputText });
       setContextualSearchResult(result);
       if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error")) {
         toast({ title: "Erreur de Recherche Contextuelle", description: result.researchResult, variant: "destructive" });
       } else {
-        toast({ title: "Recherche Contextuelle", description: `Résultat:\n${result.researchResult.substring(0, 200)}...`, duration: 8000 });
+        toast({ title: "Recherche Contextuelle Terminée", description: `Le résultat est affiché sous la zone de saisie.`, duration: 5000 });
       }
     } catch (error: any) {
       toast({ title: "Erreur de Recherche Contextuelle", description: error.message || "Une erreur inattendue.", variant: "destructive" });
+       setContextualSearchResult({researchResult: `Échec de la recherche: ${error.message || "Erreur inconnue"}`});
     } finally {
       setIsSearchingContextual(false);
     }
@@ -238,17 +242,18 @@ export default function CognitiveMapperClient() {
       return;
     }
     setIsSearchingManipulation(true);
-    setManipulationSearchResult(null);
+    setManipulationSearchResult(null); // Clear previous results
     try {
       const result = await researchManipulationAction({ text: inputText });
       setManipulationSearchResult(result);
        if (result.manipulationInsights.startsWith("Failed") || result.manipulationInsights.startsWith("Error")) {
         toast({ title: "Erreur Analyse Manipulation (Sonar)", description: result.manipulationInsights, variant: "destructive" });
       } else {
-        toast({ title: "Analyse Manipulation (Sonar)", description: `Aperçu:\n${result.manipulationInsights.substring(0, 200)}...`, duration: 8000 });
+        toast({ title: "Analyse de Manipulation (Sonar) Terminée", description: `Le résultat est affiché sous la zone de saisie.`, duration: 5000 });
       }
     } catch (error: any) {
       toast({ title: "Erreur Analyse Manipulation (Sonar)", description: error.message || "Une erreur inattendue.", variant: "destructive" });
+      setManipulationSearchResult({manipulationInsights: `Échec de l'analyse: ${error.message || "Erreur inconnue"}`});
     } finally {
       setIsSearchingManipulation(false);
     }
@@ -299,6 +304,42 @@ export default function CognitiveMapperClient() {
             handleManipulationSearch={handleManipulationSearch}
             isSearchingManipulation={isSearchingManipulation}
           />
+          <div className="mt-6 space-y-4">
+            {contextualSearchResult && (
+              <Card className="animate-fadeIn">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-headline text-xl text-primary">
+                    <Telescope className="h-5 w-5" />
+                    Résultat de la Recherche Contextuelle
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-auto max-h-60 pr-2">
+                    <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed bg-muted/30 p-3 rounded-md shadow-inner">
+                      {contextualSearchResult.researchResult || "Aucun résultat."}
+                    </p>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
+            {manipulationSearchResult && (
+              <Card className="animate-fadeIn">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 font-headline text-xl text-primary">
+                     <MessageSquareText className="h-5 w-5" />
+                    Résultat de l'Analyse de Manipulation (Sonar)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                   <ScrollArea className="h-auto max-h-60 pr-2">
+                    <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed bg-muted/30 p-3 rounded-md shadow-inner">
+                      {manipulationSearchResult.manipulationInsights || "Aucun résultat."}
+                    </p>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
         <TabsContent value="analysis">
           <CognitiveAnalysisPanel analysisResults={analysisResults} isLoading={isAnalyzing} />
