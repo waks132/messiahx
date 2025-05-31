@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb } from "lucide-react";
+import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb, Info } from "lucide-react";
 import { CognitiveMapChart } from "@/components/charts/cognitive-map-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +75,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
     );
   }
 
-  if (!analysisResults || analysisResults.summary.startsWith("Failed to analyze text")) {
+  if (!analysisResults || (analysisResults.summary.startsWith("Failed to analyze text") && !analysisResults.summary.startsWith("Failed to analyze text: Analysis summary not available."))) {
     return (
       <Card className="shadow-xl bg-card/80 backdrop-blur-md border-primary/30">
         <CardHeader>
@@ -88,7 +88,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
           <p className="text-muted-foreground text-center py-4">
             {analysisResults?.summary || "Les résultats de l'analyse initiale du discours apparaîtront ici une fois le texte soumis et analysé."}
           </p>
-           {analysisResults?.summary.startsWith("Failed to analyze text") && (
+           {analysisResults?.summary.startsWith("Failed to analyze text") && !analysisResults.summary.startsWith("Failed to analyze text: Analysis summary not available.") && (
             <p className="text-destructive text-center py-2 bg-destructive/10 rounded-md">
               {analysisResults.summary}
             </p>
@@ -97,6 +97,33 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
       </Card>
     );
   }
+  
+  const hasResults = analysisResults && 
+                     !analysisResults.summary.startsWith("Failed to analyze text: Analysis summary not available.") &&
+                     (analysisResults.rhetoricalTechniques.length > 0 ||
+                      analysisResults.cognitiveBiases.length > 0 ||
+                      analysisResults.unverifiableFacts.length > 0 ||
+                      (analysisResults.summary && !analysisResults.summary.startsWith("Failed to analyze text")));
+
+
+  if (!hasResults) {
+     return (
+      <Card className="shadow-xl bg-card/80 backdrop-blur-md border-primary/30">
+        <CardHeader>
+          <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
+            <SearchCheck className="h-6 w-6" />
+            Analyse Initiale du Discours
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-center py-4">
+            Aucun résultat à afficher pour l'analyse initiale. Veuillez soumettre un texte.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
 
   return (
     <div className="space-y-6">
