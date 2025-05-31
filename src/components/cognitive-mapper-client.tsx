@@ -1,0 +1,143 @@
+"use client";
+
+import { useState, useEffect } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { InputPanel } from "@/components/panels/input-panel";
+import { CognitiveAnalysisPanel } from "@/components/panels/cognitive-analysis-panel";
+import { CriticalSummaryPanel, type AnalysisStyle } from "@/components/panels/critical-summary-panel";
+import { ParanoidReadingPanel } from "@/components/panels/paranoid-reading-panel";
+import { analyzeTextAction, generateCriticalSummaryAction, detectHiddenNarrativesAction } from "@/app/actions";
+import type { AnalyzeTextOutput } from '@/ai/flows/analyze-text-for-manipulation';
+import type { GenerateCriticalSummaryOutput } from '@/ai/flows/generate-critical-summary';
+import type { DetectHiddenNarrativesOutput } from '@/ai/flows/detect-hidden-narratives';
+import { Logo } from '@/components/logo';
+import { useToast } from "@/hooks/use-toast";
+import { FileText, ListChecks, Quote, Drama, Settings2 } from 'lucide-react';
+
+export default function CognitiveMapperClient() {
+  const [inputText, setInputText] = useState<string>("");
+  const [analysisResults, setAnalysisResults] = useState<AnalyzeTextOutput | null>(null);
+  const [criticalSummaryResult, setCriticalSummaryResult] = useState<GenerateCriticalSummaryOutput | null>(null);
+  const [paranoidReadingResult, setParanoidReadingResult] = useState<DetectHiddenNarrativesOutput | null>(null);
+  
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState<boolean>(false);
+  const [isGeneratingParanoid, setIsGeneratingParanoid] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<string>("input");
+
+  const { toast } = useToast();
+
+  const handleAnalyze = async () => {
+    if (!inputText.trim()) {
+      toast({ title: "Erreur", description: "Le champ de texte est vide.", variant: "destructive" });
+      return;
+    }
+    setIsAnalyzing(true);
+    setAnalysisResults(null); // Clear previous results for this panel
+    // Potentially clear other panel results too, or let user re-generate them
+    // setCriticalSummaryResult(null); 
+    // setParanoidReadingResult(null);
+
+    try {
+      const results = await analyzeTextAction({ text: inputText });
+      setAnalysisResults(results);
+      toast({ title: "Succès", description: "Analyse cognitive terminée." });
+      setActiveTab("analysis"); // Switch to analysis tab
+    } catch (error: any) {
+      toast({ title: "Erreur d'analyse", description: error.message, variant: "destructive" });
+      setAnalysisResults(null);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleGenerateSummary = async (style: AnalysisStyle) => {
+    if (!inputText.trim()) {
+      toast({ title: "Erreur", description: "Aucun texte à résumer. Veuillez d'abord analyser un texte.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingSummary(true);
+    setCriticalSummaryResult(null);
+    try {
+      const summary = await generateCriticalSummaryAction({ analyzedText: inputText, analysisStyle: style });
+      setCriticalSummaryResult(summary);
+      toast({ title: "Succès", description: "Résumé critique généré." });
+    } catch (error: any) {
+      toast({ title: "Erreur de résumé", description: error.message, variant: "destructive" });
+       setCriticalSummaryResult(null);
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const handleGenerateParanoidReading = async () => {
+    if (!inputText.trim()) {
+      toast({ title: "Erreur", description: "Aucun texte pour la lecture paranoïaque. Veuillez d'abord analyser un texte.", variant: "destructive" });
+      return;
+    }
+    setIsGeneratingParanoid(true);
+    setParanoidReadingResult(null);
+    try {
+      const reading = await detectHiddenNarrativesAction({ text: inputText });
+      setParanoidReadingResult(reading);
+      toast({ title: "Succès", description: "Lecture paranoïaque terminée." });
+    } catch (error: any) {
+      toast({ title: "Erreur de lecture", description: error.message, variant: "destructive" });
+      setParanoidReadingResult(null);
+    } finally {
+      setIsGeneratingParanoid(false);
+    }
+  };
+
+  const isBaseTextAvailable = !!inputText.trim();
+
+  return (
+    <div className="w-full max-w-5xl mx-auto">
+      <Logo />
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 mb-6 bg-primary/5 backdrop-blur-sm p-1.5 rounded-lg">
+          <TabsTrigger value="input" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+            <FileText className="mr-2 h-4 w-4" /> Entrée & Analyse
+          </TabsTrigger>
+          <TabsTrigger value="analysis" disabled={!analysisResults && !isAnalyzing} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+            <ListChecks className="mr-2 h-4 w-4" /> Analyse Cognitive
+          </TabsTrigger>
+          <TabsTrigger value="summary" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+            <Quote className="mr-2 h-4 w-4" /> Résumé Critique
+          </TabsTrigger>
+          <TabsTrigger value="paranoid" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+            <Drama className="mr-2 h-4 w-4" /> Lecture Paranoïaque
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="input">
+          <InputPanel 
+            inputText={inputText} 
+            setInputText={setInputText} 
+            handleAnalyze={handleAnalyze}
+            isAnalyzing={isAnalyzing}
+          />
+        </TabsContent>
+        <TabsContent value="analysis">
+          <CognitiveAnalysisPanel analysisResults={analysisResults} isLoading={isAnalyzing} />
+        </TabsContent>
+        <TabsContent value="summary">
+          <CriticalSummaryPanel 
+            criticalSummaryResult={criticalSummaryResult}
+            handleGenerateSummary={handleGenerateSummary}
+            isLoading={isGeneratingSummary}
+            isBaseTextAvailable={isBaseTextAvailable}
+          />
+        </TabsContent>
+        <TabsContent value="paranoid">
+          <ParanoidReadingPanel 
+            paranoidReadingResult={paranoidReadingResult}
+            handleGenerateParanoidReading={handleGenerateParanoidReading}
+            isLoading={isGeneratingParanoid}
+            isBaseTextAvailable={isBaseTextAvailable}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
