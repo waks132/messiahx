@@ -70,28 +70,30 @@ const reformulateTextFlow = ai.defineFlow(
     const { text, style } = input;
 
     const selectedStyleKey = style as keyof typeof reformulationPromptsConfig;
+    // Ensure reformulationPromptsConfig is treated as potentially undefined for safety, though hardcoded here.
     const selectedPrompts = reformulationPromptsConfig ? reformulationPromptsConfig[selectedStyleKey] : undefined;
 
     if (!selectedPrompts || !selectedPrompts.system_prompt_template || !selectedPrompts.user_prompt_template) {
       console.error(`Reformulation style "${style}" not found or improperly configured in reformulationPromptsConfig.`);
       return {
-        reformulatedText: `Error: Reformulation style "${style}" is not configured or prompts are missing. Please check flow configuration.`,
+        reformulatedText: `Error: Reformulation style "${style}" is not configured or prompts are missing. Please check flow configuration. Veuilez fournir une réponse détaillée, complète, substantielle et bien développée.`,
         styleUsed: style,
       };
     }
 
     try {
-      const systemPromptContent = selectedPrompts.system_prompt_template;
+      const systemPromptContent = selectedPrompts.system_prompt_template + " Assurez-vous de fournir une réponse complète, détaillée, substantielle et bien développée.";
       const userPromptContent = selectedPrompts.user_prompt_template.replace('{text}', text);
 
+      // Corrected structure for ai.generate prompt
       const result = await ai.generate({
-        prompt: [ // Using structured prompt for clarity with system and user roles
-          { role: 'system', content: systemPromptContent },
-          { role: 'user', content: userPromptContent },
+        prompt: [
+          { role: 'system', content: [{text: systemPromptContent}] },
+          { role: 'user', content: [{text: userPromptContent}] },
         ],
-        // model: 'googleai/gemini-1.5-flash-latest', // Specify model if needed
+        // model: 'googleai/gemini-1.5-flash-latest', // Ensure correct model or use default
         output: {format: 'text'}, 
-        config: { temperature: 0.7 } // Adjust temperature for more creative/varied output if desired
+        config: { temperature: 0.7 } 
       });
       
       const reformulatedText = result.text;
@@ -99,7 +101,7 @@ const reformulateTextFlow = ai.defineFlow(
       if (!reformulatedText || reformulatedText.trim() === "") {
         console.warn(`LLM returned empty or no text for reformulation style "${style}". Input text length: ${text.length}`);
         return {
-          reformulatedText: `The model did not provide a reformulation for the style "${style}". This may happen with certain inputs or model limitations. Please try a different style or text.`,
+          reformulatedText: `The model did not provide a reformulation for the style "${style}". This may happen with certain inputs or model limitations. Please try a different style or text. Veuilez fournir une réponse détaillée, complète, substantielle et bien développée.`,
           styleUsed: style,
         };
       }
@@ -111,9 +113,11 @@ const reformulateTextFlow = ai.defineFlow(
     } catch (error: any) {
       console.error(`Error during reformulation for style "${style}":`, error);
       return {
-        reformulatedText: `Failed to reformulate text with style "${style}": ${error.message}`,
+        reformulatedText: `Failed to reformulate text with style "${style}": ${error.message}. Veuilez fournir une réponse détaillée, complète, substantielle et bien développée.`,
         styleUsed: style,
       };
     }
   }
 );
+
+    

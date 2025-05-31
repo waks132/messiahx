@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { FileText, UploadCloud, Send, Sparkles } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { FileText, UploadCloud, Sparkles, Search, ShieldAlert } from "lucide-react";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 interface InputPanelProps {
@@ -15,9 +15,22 @@ interface InputPanelProps {
   setInputText: Dispatch<SetStateAction<string>>;
   handleAnalyze: () => Promise<void>;
   isAnalyzing: boolean;
+  handleContextualSearch: () => Promise<void>;
+  isSearchingContextual: boolean;
+  handleManipulationSearch: () => Promise<void>;
+  isSearchingManipulation: boolean;
 }
 
-export function InputPanel({ inputText, setInputText, handleAnalyze, isAnalyzing }: InputPanelProps) {
+export function InputPanel({ 
+  inputText, 
+  setInputText, 
+  handleAnalyze, 
+  isAnalyzing,
+  handleContextualSearch,
+  isSearchingContextual,
+  handleManipulationSearch,
+  isSearchingManipulation
+}: InputPanelProps) {
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -32,10 +45,11 @@ export function InputPanel({ inputText, setInputText, handleAnalyze, isAnalyzing
       } else {
         alert("Veuillez charger un fichier .txt uniquement.");
       }
-      // Reset file input to allow re-uploading the same file
       event.target.value = "";
     }
   };
+
+  const isAnyLoading = isAnalyzing || isSearchingContextual || isSearchingManipulation;
 
   return (
     <Card className="shadow-xl bg-card/70 backdrop-blur-md border-primary/20">
@@ -44,7 +58,7 @@ export function InputPanel({ inputText, setInputText, handleAnalyze, isAnalyzing
           <FileText className="h-6 w-6" />
           Saisie du Texte Utilisateur
         </CardTitle>
-        <CardDescription>Entrez ou chargez le texte à analyser pour la cartographie cognitive.</CardDescription>
+        <CardDescription>Entrez ou chargez le texte à analyser pour la cartographie cognitive et les recherches contextuelles.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
@@ -56,7 +70,7 @@ export function InputPanel({ inputText, setInputText, handleAnalyze, isAnalyzing
             onChange={(e) => setInputText(e.target.value)}
             rows={12}
             className="min-h-[250px] border-2 border-input focus:border-accent transition-colors duration-300 shadow-inner rounded-lg p-4 bg-background/80 text-base"
-            disabled={isAnalyzing}
+            disabled={isAnyLoading}
           />
         </div>
 
@@ -70,14 +84,14 @@ export function InputPanel({ inputText, setInputText, handleAnalyze, isAnalyzing
               accept=".txt"
               onChange={handleFileChange}
               className="flex-grow file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-accent/20 hover:file:text-accent-foreground cursor-pointer disabled:opacity-50"
-              disabled={isAnalyzing}
+              disabled={isAnyLoading}
             />
           </div>
         </div>
         
         <Button 
           onClick={handleAnalyze} 
-          disabled={isAnalyzing || !inputText.trim()} 
+          disabled={isAnyLoading || !inputText.trim()} 
           size="lg" 
           className="w-full text-base py-3 transition-all duration-300 hover:shadow-xl transform hover:scale-105 bg-gradient-to-r from-primary to-accent text-primary-foreground disabled:from-muted disabled:to-muted/80 disabled:text-muted-foreground disabled:hover:scale-100"
         >
@@ -94,6 +108,46 @@ export function InputPanel({ inputText, setInputText, handleAnalyze, isAnalyzing
           )}
         </Button>
       </CardContent>
+      <CardFooter className="pt-4 border-t border-border/30 flex flex-col sm:flex-row gap-3">
+         <Button 
+            variant="outline"
+            onClick={handleContextualSearch} 
+            disabled={isAnyLoading || !inputText.trim()} 
+            className="w-full sm:w-auto"
+          >
+            {isSearchingContextual ? (
+              <>
+                <LoadingSpinner size="sm" />
+                <span className="ml-2">Recherche...</span>
+              </>
+            ) : (
+              <>
+                <Search className="mr-2 h-4 w-4" />
+                Recherche Contextuelle (Perplexity-like)
+              </>
+            )}
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={handleManipulationSearch} 
+            disabled={isAnyLoading || !inputText.trim()} 
+            className="w-full sm:w-auto"
+          >
+            {isSearchingManipulation ? (
+              <>
+                <LoadingSpinner size="sm" />
+                <span className="ml-2">Analyse Sonar...</span>
+              </>
+            ) : (
+              <>
+                <ShieldAlert className="mr-2 h-4 w-4" />
+                Analyse de Manipulation (Sonar-like)
+              </>
+            )}
+          </Button>
+      </CardFooter>
     </Card>
   );
 }
+
+    

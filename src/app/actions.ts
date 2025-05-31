@@ -6,6 +6,9 @@ import { generateCriticalSummary as generateCriticalSummaryFlow, type GenerateCr
 import { detectHiddenNarratives as detectHiddenNarrativesFlow, type DetectHiddenNarrativesInput, type DetectHiddenNarrativesOutput } from '@/ai/flows/detect-hidden-narratives';
 import { classifyCognitiveCategories as classifyCognitiveCategoriesFlow, type ClassifyCognitiveCategoriesInput, type ClassifyCognitiveCategoriesOutput } from '@/ai/flows/classify-cognitive-categories';
 import { reformulateText as reformulateTextFlow, type ReformulateTextInput, type ReformulateTextOutput } from '@/ai/flows/reformulate-text';
+import { researchContextual as researchContextualFlow, type ResearchContextualInput, type ResearchContextualOutput } from '@/ai/flows/research-contextual-flow';
+import { researchManipulation as researchManipulationFlow, type ResearchManipulationInput, type ResearchManipulationOutput } from '@/ai/flows/research-manipulation-flow';
+
 
 export async function analyzeTextAction(input: AnalyzeTextInput): Promise<AnalyzeTextOutput> {
   try {
@@ -94,3 +97,33 @@ export async function reformulateTextAction(input: ReformulateTextInput): Promis
     };
   }
 }
+
+export async function researchContextualAction(input: ResearchContextualInput): Promise<ResearchContextualOutput> {
+  try {
+    const result = await researchContextualFlow(input);
+    if (!result || typeof result.researchResult !== 'string') {
+      console.error("Invalid result from researchContextualFlow:", result);
+      return { researchResult: "Failed to perform contextual research: Invalid response from AI." };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error in researchContextualAction:", error);
+    return { researchResult: `Failed to perform contextual research: ${error instanceof Error ? error.message : "Unknown error"}` };
+  }
+}
+
+export async function researchManipulationAction(input: ResearchManipulationInput): Promise<ResearchManipulationOutput> {
+  try {
+    const result = await researchManipulationFlow(input);
+    if (!result || typeof result.manipulationInsights !== 'string') {
+      console.error("Invalid result from researchManipulationFlow:", result);
+      return { manipulationInsights: "Failed to perform manipulation research: Invalid response from AI." };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error in researchManipulationAction:", error);
+    return { manipulationInsights: `Failed to perform manipulation research: ${error instanceof Error ? error.message : "Unknown error"}` };
+  }
+}
+
+    

@@ -15,16 +15,21 @@ import {
   generateCriticalSummaryAction, 
   detectHiddenNarrativesAction, 
   classifyCognitiveCategoriesAction,
-  reformulateTextAction 
+  reformulateTextAction,
+  researchContextualAction,
+  researchManipulationAction
 } from "@/app/actions";
 import type { AnalyzeTextOutput, AnalyzeTextInput } from '@/ai/flows/analyze-text-for-manipulation';
 import type { GenerateCriticalSummaryOutput } from '@/ai/flows/generate-critical-summary';
 import type { DetectHiddenNarrativesOutput } from '@/ai/flows/detect-hidden-narratives';
 import type { ClassifyCognitiveCategoriesInput, ClassifyCognitiveCategoriesOutput } from '@/ai/flows/classify-cognitive-categories';
 import type { ReformulateTextInput, ReformulateTextOutput } from '@/ai/flows/reformulate-text';
+import type { ResearchContextualInput, ResearchContextualOutput } from '@/ai/flows/research-contextual-flow';
+import type { ResearchManipulationInput, ResearchManipulationOutput } from '@/ai/flows/research-manipulation-flow';
+
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Quote, Drama, BrainCircuit, SearchCheck, SlidersHorizontal, PenTool, Settings } from 'lucide-react';
+import { FileText, Quote, Drama, BrainCircuit, SearchCheck, SlidersHorizontal, PenTool, Settings, Search, ShieldAlert } from 'lucide-react';
 
 const initialAnalysisResults: AnalyzeTextOutput = {
   summary: "",
@@ -54,11 +59,17 @@ export default function CognitiveMapperClient() {
   const [isGeneratingParanoid, setIsGeneratingParanoid] = useState<boolean>(false);
   const [isClassifying, setIsClassifying] = useState<boolean>(false);
 
-  // State for Reformulation
   const [reformulationInputText, setReformulationInputText] = useState<string>("");
-  const [selectedReformulationStyle, setSelectedReformulationStyle] = useState<string>("neutral"); // Default style
+  const [selectedReformulationStyle, setSelectedReformulationStyle] = useState<string>("neutral");
   const [reformulationResult, setReformulationResult] = useState<ReformulateTextOutput | null>(null);
   const [isReformulating, setIsReformulating] = useState<boolean>(false);
+
+  // State for Perplexity-like searches
+  const [isSearchingContextual, setIsSearchingContextual] = useState<boolean>(false);
+  const [contextualSearchResult, setContextualSearchResult] = useState<ResearchContextualOutput | null>(null);
+  const [isSearchingManipulation, setIsSearchingManipulation] = useState<boolean>(false);
+  const [manipulationSearchResult, setManipulationSearchResult] = useState<ResearchManipulationOutput | null>(null);
+
 
   const [activeTab, setActiveTab] = useState<string>("input");
   const { toast } = useToast();
@@ -79,8 +90,8 @@ export default function CognitiveMapperClient() {
     setCriticalSummaryResult(null); 
     setParanoidReadingResult(null);
     setClassificationResult(initialClassificationResult); 
-    setReformulationInputText(inputText); // Update reformulation input when main text changes
-    setReformulationResult(null); // Clear previous reformulation results
+    setReformulationInputText(inputText); 
+    setReformulationResult(null); 
 
     try {
       const results = await analyzeTextAction({ text: inputText });
@@ -199,6 +210,51 @@ export default function CognitiveMapperClient() {
     }
   };
 
+  const handleContextualSearch = async () => {
+    if (!inputText.trim()) {
+      toast({ title: "Erreur", description: "Le champ de texte est vide pour la recherche contextuelle.", variant: "destructive" });
+      return;
+    }
+    setIsSearchingContextual(true);
+    setContextualSearchResult(null);
+    try {
+      const result = await researchContextualAction({ text: inputText });
+      setContextualSearchResult(result);
+      if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error")) {
+        toast({ title: "Erreur de Recherche Contextuelle", description: result.researchResult, variant: "destructive" });
+      } else {
+        toast({ title: "Recherche Contextuelle", description: `Résultat:\n${result.researchResult.substring(0, 200)}...`, duration: 8000 });
+      }
+    } catch (error: any) {
+      toast({ title: "Erreur de Recherche Contextuelle", description: error.message || "Une erreur inattendue.", variant: "destructive" });
+    } finally {
+      setIsSearchingContextual(false);
+    }
+  };
+
+  const handleManipulationSearch = async () => {
+    if (!inputText.trim()) {
+      toast({ title: "Erreur", description: "Le champ de texte est vide pour l'analyse de manipulation.", variant: "destructive" });
+      return;
+    }
+    setIsSearchingManipulation(true);
+    setManipulationSearchResult(null);
+    try {
+      const result = await researchManipulationAction({ text: inputText });
+      setManipulationSearchResult(result);
+       if (result.manipulationInsights.startsWith("Failed") || result.manipulationInsights.startsWith("Error")) {
+        toast({ title: "Erreur Analyse Manipulation (Sonar)", description: result.manipulationInsights, variant: "destructive" });
+      } else {
+        toast({ title: "Analyse Manipulation (Sonar)", description: `Aperçu:\n${result.manipulationInsights.substring(0, 200)}...`, duration: 8000 });
+      }
+    } catch (error: any) {
+      toast({ title: "Erreur Analyse Manipulation (Sonar)", description: error.message || "Une erreur inattendue.", variant: "destructive" });
+    } finally {
+      setIsSearchingManipulation(false);
+    }
+  };
+
+
   const isBaseTextAvailable = !!inputText.trim();
   const isBaseAnalysisDone = !!analysisResults && !analysisResults.summary.startsWith("Failed");
   const isReformulationInputAvailable = !!reformulationInputText.trim();
@@ -228,7 +284,7 @@ export default function CognitiveMapperClient() {
             <Drama className="mr-2 h-4 w-4" /> Lecture Paranoïaque
           </TabsTrigger>
           <TabsTrigger value="config" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <Settings className="mr-2 h-4 w-4" /> Configuration Prompts
+            <Settings className="mr-2 h-4 w-4" /> Prompts
           </TabsTrigger>
         </TabsList>
 
@@ -238,6 +294,10 @@ export default function CognitiveMapperClient() {
             setInputText={setInputText} 
             handleAnalyze={handleAnalyze}
             isAnalyzing={isAnalyzing}
+            handleContextualSearch={handleContextualSearch}
+            isSearchingContextual={isSearchingContextual}
+            handleManipulationSearch={handleManipulationSearch}
+            isSearchingManipulation={isSearchingManipulation}
           />
         </TabsContent>
         <TabsContent value="analysis">
@@ -286,3 +346,5 @@ export default function CognitiveMapperClient() {
     </div>
   );
 }
+
+    
