@@ -8,6 +8,7 @@ import { CognitiveAnalysisPanel } from "@/components/panels/cognitive-analysis-p
 import { CriticalSummaryPanel, type AnalysisStyle } from "@/components/panels/critical-summary-panel";
 import { ParanoidReadingPanel } from "@/components/panels/paranoid-reading-panel";
 import { CognitiveClassificationPanel } from "@/components/panels/cognitive-classification-panel";
+import PromptConfigPage from "@/app/config/prompts/page"; // Assuming this is where it will be
 import { analyzeTextAction, generateCriticalSummaryAction, detectHiddenNarrativesAction, classifyCognitiveCategoriesAction } from "@/app/actions";
 import type { AnalyzeTextOutput, AnalyzeTextInput } from '@/ai/flows/analyze-text-for-manipulation';
 import type { GenerateCriticalSummaryOutput } from '@/ai/flows/generate-critical-summary';
@@ -15,9 +16,8 @@ import type { DetectHiddenNarrativesOutput } from '@/ai/flows/detect-hidden-narr
 import type { ClassifyCognitiveCategoriesInput, ClassifyCognitiveCategoriesOutput } from '@/ai/flows/classify-cognitive-categories';
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
-import { FileText, ListChecks, Quote, Drama, Settings2, BrainCircuit, SearchCheck } from 'lucide-react';
+import { FileText, Quote, Drama, Settings2, BrainCircuit, SearchCheck, SlidersHorizontal } from 'lucide-react';
 
-// Default empty state for analysisResults
 const initialAnalysisResults: AnalyzeTextOutput = {
   summary: "",
   rhetoricalTechniques: [],
@@ -25,7 +25,6 @@ const initialAnalysisResults: AnalyzeTextOutput = {
   unverifiableFacts: [],
 };
 
-// Default empty state for classificationResult
 const initialClassificationResult: ClassifyCognitiveCategoriesOutput = {
   classifiedCategories: [],
   overallClassification: {
@@ -35,13 +34,12 @@ const initialClassificationResult: ClassifyCognitiveCategoriesOutput = {
   }
 };
 
-
 export default function CognitiveMapperClient() {
   const [inputText, setInputText] = useState<string>("");
-  const [analysisResults, setAnalysisResults] = useState<AnalyzeTextOutput | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<AnalyzeTextOutput>(initialAnalysisResults);
   const [criticalSummaryResult, setCriticalSummaryResult] = useState<GenerateCriticalSummaryOutput | null>(null);
   const [paranoidReadingResult, setParanoidReadingResult] = useState<DetectHiddenNarrativesOutput | null>(null);
-  const [classificationResult, setClassificationResult] = useState<ClassifyCognitiveCategoriesOutput | null>(null);
+  const [classificationResult, setClassificationResult] = useState<ClassifyCognitiveCategoriesOutput>(initialClassificationResult);
   
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState<boolean>(false);
@@ -57,23 +55,23 @@ export default function CognitiveMapperClient() {
       return;
     }
     setIsAnalyzing(true);
-    setAnalysisResults(null); 
+    setAnalysisResults(initialAnalysisResults); 
     setCriticalSummaryResult(null); 
     setParanoidReadingResult(null);
-    setClassificationResult(null); 
+    setClassificationResult(initialClassificationResult); 
 
     try {
       const results = await analyzeTextAction({ text: inputText });
       setAnalysisResults(results);
       if (results.summary.startsWith("Failed to analyze text")) {
-        toast({ title: "Erreur d'analyse", description: results.summary, variant: "destructive" });
+        toast({ title: "Erreur d'Analyse Initiale", description: results.summary, variant: "destructive" });
       } else {
         toast({ title: "Succès", description: "Analyse initiale terminée." });
         setActiveTab("analysis"); 
       }
-    } catch (error: any) { // Catching errors from the action call itself if it throws
-      toast({ title: "Erreur d'analyse", description: error.message || "Une erreur inattendue est survenue lors de l'analyse.", variant: "destructive" });
-      setAnalysisResults(initialAnalysisResults); // Reset to initial empty state
+    } catch (error: any) {
+      toast({ title: "Erreur d'Analyse Initiale", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
+      setAnalysisResults(initialAnalysisResults);
     } finally {
       setIsAnalyzing(false);
     }
@@ -81,24 +79,23 @@ export default function CognitiveMapperClient() {
 
   const handleGenerateSummary = async (style: AnalysisStyle) => {
     if (!inputText.trim()) {
-      toast({ title: "Erreur", description: "Aucun texte à résumer. Veuillez d'abord entrer un texte.", variant: "destructive" });
+      toast({ title: "Erreur", description: "Aucun texte à résumer.", variant: "destructive" });
       return;
     }
     setIsGeneratingSummary(true);
     setCriticalSummaryResult(null);
     try {
-      // Use analysisResults.summary if available and not an error message, otherwise use inputText
       const textToSummarize = (analysisResults && !analysisResults.summary.startsWith("Failed")) ? analysisResults.summary : inputText;
       const summary = await generateCriticalSummaryAction({ analyzedText: textToSummarize, analysisStyle: style });
       setCriticalSummaryResult(summary);
       if (summary.summary.startsWith("Failed to generate critical summary")) {
-        toast({ title: "Erreur de résumé", description: summary.summary, variant: "destructive" });
+        toast({ title: "Erreur de Résumé Critique", description: summary.summary, variant: "destructive" });
       } else {
         toast({ title: "Succès", description: "Résumé critique généré." });
       }
     } catch (error: any) {
-      toast({ title: "Erreur de résumé", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
-       setCriticalSummaryResult({ summary: ""});
+      toast({ title: "Erreur de Résumé Critique", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
+       setCriticalSummaryResult({ summary: "Échec de la génération du résumé."});
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -106,7 +103,7 @@ export default function CognitiveMapperClient() {
 
   const handleGenerateParanoidReading = async () => {
     if (!inputText.trim()) {
-      toast({ title: "Erreur", description: "Aucun texte pour la lecture paranoïaque. Veuillez d'abord entrer un texte.", variant: "destructive" });
+      toast({ title: "Erreur", description: "Aucun texte pour la lecture paranoïaque.", variant: "destructive" });
       return;
     }
     setIsGeneratingParanoid(true);
@@ -115,25 +112,25 @@ export default function CognitiveMapperClient() {
       const reading = await detectHiddenNarrativesAction({ text: inputText });
       setParanoidReadingResult(reading);
       if (reading.hiddenNarratives.startsWith("Failed to detect hidden narratives")) {
-         toast({ title: "Erreur de lecture", description: reading.hiddenNarratives, variant: "destructive" });
+         toast({ title: "Erreur de Lecture Paranoïaque", description: reading.hiddenNarratives, variant: "destructive" });
       } else {
         toast({ title: "Succès", description: "Lecture paranoïaque terminée." });
       }
     } catch (error: any) {
-      toast({ title: "Erreur de lecture", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
-      setParanoidReadingResult({ hiddenNarratives: "" });
+      toast({ title: "Erreur de Lecture Paranoïaque", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
+      setParanoidReadingResult({ hiddenNarratives: "Échec de la détection des narratifs cachés." });
     } finally {
       setIsGeneratingParanoid(false);
     }
   };
 
   const handleClassifyCognitiveCategories = async () => {
-    if (!analysisResults || !analysisResults.summary || analysisResults.summary.startsWith("Failed")) {
+    if (!analysisResults || analysisResults.summary.startsWith("Failed")) {
        toast({ title: "Erreur", description: "L'analyse initiale doit être effectuée avec succès avant la classification.", variant: "destructive" });
       return;
     }
     setIsClassifying(true);
-    setClassificationResult(null);
+    setClassificationResult(initialClassificationResult);
     try {
       const input: ClassifyCognitiveCategoriesInput = {
         analysisSummary: analysisResults.summary,
@@ -145,41 +142,43 @@ export default function CognitiveMapperClient() {
       const result = await classifyCognitiveCategoriesAction(input);
       setClassificationResult(result);
       if (result.overallClassification.reasoning.startsWith("Failed to classify cognitive categories")) {
-        toast({ title: "Erreur de Classification", description: result.overallClassification.reasoning, variant: "destructive" });
+        toast({ title: "Erreur de Classification Cognitive", description: result.overallClassification.reasoning, variant: "destructive" });
       } else {
         toast({ title: "Succès", description: "Classification cognitive détaillée terminée." });
       }
     } catch (error: any) {
-      toast({ title: "Erreur de Classification", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
+      toast({ title: "Erreur de Classification Cognitive", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
       setClassificationResult(initialClassificationResult);
     } finally {
       setIsClassifying(false);
     }
   };
 
-
   const isBaseTextAvailable = !!inputText.trim();
   const isBaseAnalysisDone = !!analysisResults && !analysisResults.summary.startsWith("Failed");
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full max-w-6xl mx-auto"> {/* Increased max-width for a wider layout */}
       <Logo />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5 mb-6 bg-primary/5 backdrop-blur-sm p-1.5 rounded-lg">
-          <TabsTrigger value="input" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 mb-6 bg-card/80 backdrop-blur-sm p-1.5 rounded-lg shadow-md">
+          <TabsTrigger value="input" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <FileText className="mr-2 h-4 w-4" /> Entrée
           </TabsTrigger>
-          <TabsTrigger value="analysis" disabled={!isBaseAnalysisDone && !isAnalyzing} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+          <TabsTrigger value="analysis" disabled={!isBaseAnalysisDone && !isAnalyzing} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <SearchCheck className="mr-2 h-4 w-4" /> Analyse Initiale
           </TabsTrigger>
-           <TabsTrigger value="classification" disabled={!isBaseAnalysisDone && !isClassifying} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+           <TabsTrigger value="classification" disabled={!isBaseAnalysisDone && !isClassifying} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <BrainCircuit className="mr-2 h-4 w-4" /> Classification
           </TabsTrigger>
-          <TabsTrigger value="summary" disabled={!isBaseTextAvailable && !isGeneratingSummary} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+          <TabsTrigger value="summary" disabled={!isBaseTextAvailable && !isGeneratingSummary} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Quote className="mr-2 h-4 w-4" /> Résumé Critique
           </TabsTrigger>
-          <TabsTrigger value="paranoid" disabled={!isBaseTextAvailable && !isGeneratingParanoid} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-md">
+          <TabsTrigger value="paranoid" disabled={!isBaseTextAvailable && !isGeneratingParanoid} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Drama className="mr-2 h-4 w-4" /> Lecture Paranoïaque
+          </TabsTrigger>
+          <TabsTrigger value="config" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
+            <SlidersHorizontal className="mr-2 h-4 w-4" /> Configuration Prompts
           </TabsTrigger>
         </TabsList>
 
@@ -217,6 +216,13 @@ export default function CognitiveMapperClient() {
             isLoading={isGeneratingParanoid}
             isBaseTextAvailable={isBaseTextAvailable}
           />
+        </TabsContent>
+        <TabsContent value="config">
+          {/* The PromptConfigPage component will be rendered here.
+              It needs to be created in src/app/config/prompts/page.tsx as per the plan.
+              For now, I'll assume it exists and is imported.
+          */}
+          <PromptConfigPage />
         </TabsContent>
       </Tabs>
     </div>

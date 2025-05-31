@@ -8,6 +8,69 @@ body {
 
 @layer base {
   :root {
+    /* Inspired by user's provided CSS:
+       --primary-color: #0d6efd; (hsl(211, 96%, 47%))
+       --success-color: #198754; (hsl(152, 69%, 31%))
+       --warning-color: #ffc107; (hsl(45, 100%, 51%))
+       --danger-color: #dc3545; (hsl(354, 70%, 54%))
+       --info-color: #0dcaf0; (hsl(190, 88%, 52%))
+       --dark-color: #212529; (hsl(210, 10%, 15%))
+       --light-color: #f8f9fa; (hsl(210, 17%, 98%))
+       Saturated purple #A050A0 (hsl(300, 33%, 47%)) - Original PRD
+       Light grey #F0F0F3 (hsl(240, 13%, 95%)) - Original PRD
+       Desaturated pink #E090E0 (hsl(300, 53%, 72%)) - Original PRD
+    */
+
+    /* Primary Theme: Using a blue similar to user's --primary-color */
+    --background: 220 10% 10%; /* Darker background like --dark-color */
+    --foreground: 210 15% 85%; /* Lighter text for contrast */
+
+    --card: 220 10% 15%; /* Slightly lighter than background */
+    --card-foreground: 210 15% 85%;
+
+    --popover: 220 10% 12%;
+    --popover-foreground: 210 15% 85%;
+
+    --primary: 211 90% 55%; /* Brighter blue, closer to #0d6efd */
+    --primary-foreground: 210 15% 95%;
+
+    --secondary: 210 10% 25%; /* Muted secondary */
+    --secondary-foreground: 210 15% 80%;
+
+    --muted: 210 10% 20%;
+    --muted-foreground: 210 10% 55%;
+
+    /* Accent: Using a purple from original PRD, slightly adjusted for dark theme */
+    --accent: 300 50% 65%; /* #C973C9 - Adjusted desaturated pink */
+    --accent-foreground: 300 10% 15%;
+
+    --destructive: 354 70% 58%; /* Closer to #dc3545 */
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 210 10% 30%;
+    --input: 210 10% 28%;
+    --ring: 211 80% 60%;
+    
+    --chart-1: 211 90% 55%; /* primary */
+    --chart-2: 300 50% 65%; /* accent */
+    --chart-3: 190 80% 55%; /* info-color like */
+    --chart-4: 45 100% 55%; /* warning-color like */
+    --chart-5: 152 65% 45%; /* success-color like */
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 220 10% 12%;
+    --sidebar-foreground: 210 15% 80%;
+    --sidebar-primary: 211 90% 55%;
+    --sidebar-primary-foreground: 210 15% 95%;
+    --sidebar-accent: 300 50% 55%;
+    --sidebar-accent-foreground: 300 10% 90%;
+    --sidebar-border: 210 10% 25%;
+    --sidebar-ring: 211 80% 60%;
+  }
+
+  /* Light theme adjustments - keeping original PRD light theme for now, can be harmonized later */
+  .light {
     --background: 240 13% 95%; /* #F0F0F3 Light grey */
     --foreground: 225 10% 20%; /* Darker, slightly desaturated purple/blue for text */
 
@@ -29,22 +92,19 @@ body {
     --accent: 300 53% 72%; /* #E090E0 Desaturated pink */
     --accent-foreground: 300 25% 25%; /* Darker pink/purple for text on accent */
 
-    --destructive: 0 72% 51%; /* Adjusted destructive to be slightly less vibrant */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 10% 83%; /* Border color */
-    --input: 240 10% 90%;  /* Input background */
-    --ring: 300 33% 55%;   /* Ring color (related to primary) */
+    --border: 240 10% 83%;
+    --input: 240 10% 90%;
+    --ring: 300 33% 55%;
     
-    --chart-1: 300 33% 47%; /* primary */
-    --chart-2: 300 53% 72%; /* accent */
-    --chart-3: 210 40% 50%; /* A contrasting blue */
-    --chart-4: 30 80% 60%;  /* An orange */
-    --chart-5: 120 40% 55%; /* A green */
+    --chart-1: 300 33% 47%;
+    --chart-2: 300 53% 72%;
+    --chart-3: 210 40% 50%;
+    --chart-4: 30 80% 60%;
+    --chart-5: 120 40% 55%;
 
-    --radius: 0.5rem;
-
-    /* Sidebar variables (can keep defaults or adjust if sidebar is used extensively) */
     --sidebar-background: 240 10% 98%;
     --sidebar-foreground: 225 10% 25%;
     --sidebar-primary: 300 33% 47%;
@@ -53,52 +113,6 @@ body {
     --sidebar-accent-foreground: 300 25% 30%;
     --sidebar-border: 240 10% 85%;
     --sidebar-ring: 300 33% 55%;
-  }
-
-  .dark {
-    --background: 240 5% 10%;
-    --foreground: 240 5% 95%;
-    
-    --card: 240 5% 12%;
-    --card-foreground: 240 5% 95%;
-
-    --popover: 240 5% 10%;
-    --popover-foreground: 240 5% 95%;
-
-    --primary: 300 40% 60%;
-    --primary-foreground: 300 40% 15%;
-    
-    --secondary: 300 30% 25%;
-    --secondary-foreground: 300 30% 85%;
-
-    --muted: 240 5% 20%;
-    --muted-foreground: 240 5% 65%;
-
-    --accent: 300 60% 70%;
-    --accent-foreground: 300 25% 15%;
-
-    --destructive: 0 60% 45%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 240 5% 25%;
-    --input: 240 5% 22%;
-    --ring: 300 40% 65%;
-    
-    --chart-1: 300 40% 60%;
-    --chart-2: 300 60% 70%;
-    --chart-3: 210 50% 60%;
-    --chart-4: 30 70% 70%;
-    --chart-5: 120 50% 65%;
-
-    /* Sidebar dark theme variables */
-    --sidebar-background: 240 5% 12%;
-    --sidebar-foreground: 240 5% 90%;
-    --sidebar-primary: 300 40% 60%;
-    --sidebar-primary-foreground: 300 40% 15%;
-    --sidebar-accent: 300 50% 40%;
-    --sidebar-accent-foreground: 300 50% 85%;
-    --sidebar-border: 240 5% 20%;
-    --sidebar-ring: 300 40% 65%;
   }
 }
 
@@ -110,5 +124,14 @@ body {
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .text-gradient-messiah {
+    background: linear-gradient(45deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--chart-3)));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }

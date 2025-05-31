@@ -18,33 +18,32 @@ export async function analyzeTextAction(input: AnalyzeTextInput): Promise<Analyz
     };
   } catch (error) {
     console.error("Error in analyzeTextAction:", error);
-    // Return a structured error object or a default safe AnalyzeTextOutput
     return {
-      summary: "Failed to analyze text. Please try again.",
+      summary: `Failed to analyze text: ${error instanceof Error ? error.message : "Unknown error"}`,
       rhetoricalTechniques: [],
       cognitiveBiases: [],
       unverifiableFacts: [],
-      // You could add an error field here if the AnalyzeTextOutput schema supported it
     };
   }
 }
 
 export async function generateCriticalSummaryAction(input: GenerateCriticalSummaryInput): Promise<GenerateCriticalSummaryOutput> {
   try {
-    return await generateCriticalSummaryFlow(input);
-  } catch (error)
-  {
+    const result = await generateCriticalSummaryFlow(input);
+    return result;
+  } catch (error) {
     console.error("Error in generateCriticalSummaryAction:", error);
-    return { summary: "Failed to generate critical summary. Please try again." };
+    return { summary: `Failed to generate critical summary: ${error instanceof Error ? error.message : "Unknown error"}` };
   }
 }
 
 export async function detectHiddenNarrativesAction(input: DetectHiddenNarrativesInput): Promise<DetectHiddenNarrativesOutput> {
   try {
-    return await detectHiddenNarrativesFlow(input);
+    const result = await detectHiddenNarrativesFlow(input);
+    return result;
   } catch (error) {
     console.error("Error in detectHiddenNarrativesAction:", error);
-    return { hiddenNarratives: "Failed to detect hidden narratives. Please try again." };
+    return { hiddenNarratives: `Failed to detect hidden narratives: ${error instanceof Error ? error.message : "Unknown error"}` };
   }
 }
 
@@ -57,14 +56,13 @@ export async function classifyCognitiveCategoriesAction(input: ClassifyCognitive
     };
   } catch (error) {
     console.error("Error in classifyCognitiveCategoriesAction:", error);
-    let errorMessage = "Failed to classify cognitive categories. An unknown error occurred.";
+    let errorMessage = "An unknown error occurred during classification.";
     if (error instanceof Error) {
-       errorMessage = `Failed to classify cognitive categories: ${error.message}`;
+       errorMessage = error.message;
     }
-    // Return a default safe ClassifyCognitiveCategoriesOutput
     return {
       classifiedCategories: [],
-      overallClassification: { type: 'other', score: 0, reasoning: errorMessage }
+      overallClassification: { type: 'other', score: 0, reasoning: `Failed to classify cognitive categories: ${errorMessage}` }
     };
   }
 }

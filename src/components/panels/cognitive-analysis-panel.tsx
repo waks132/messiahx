@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookText, ShieldAlert, Eye, SearchCheck, Sigma } from "lucide-react";
+import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb } from "lucide-react";
 import { CognitiveMapChart } from "@/components/charts/cognitive-map-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -15,16 +15,28 @@ interface CognitiveAnalysisPanelProps {
   isLoading: boolean;
 }
 
-const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassName }: { title: string; items: string[]; icon: React.ReactNode; badgeVariant?: "default" | "secondary" | "destructive" | "outline", badgeClassName?: string }) => (
-  <Card className="flex-1 min-w-[280px] animate-fadeIn transition-shadow duration-300 hover:shadow-lg bg-card/80 backdrop-blur-sm">
+const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassName, tooltipText }: { title: string; items: string[]; icon: React.ReactNode; badgeVariant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info", badgeClassName?: string, tooltipText?: string }) => (
+  <Card className="flex-1 min-w-[280px] animate-fadeIn transition-shadow duration-300 hover:shadow-lg bg-card/90 backdrop-blur-sm border border-border/70">
     <CardHeader>
-      <CardTitle className="text-xl font-headline flex items-center gap-2 text-primary">
+      <CardTitle className="text-lg font-headline flex items-center gap-2 text-primary">
         {icon}
         {title}
+        {tooltipText && (
+          <TooltipProvider>
+            <Tooltip delayDuration={100}>
+              <TooltipTrigger asChild>
+                <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
+                <p>{tooltipText}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </CardTitle>
     </CardHeader>
     <CardContent>
-      {items.length > 0 ? (
+      {items && items.length > 0 ? (
         <ScrollArea className="h-40 pr-3">
           <ul className="space-y-2">
             {items.map((item, index) => (
@@ -32,7 +44,9 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
                 <TooltipProvider>
                   <Tooltip delayDuration={100}>
                     <TooltipTrigger asChild>
-                       <Badge variant={badgeVariant} className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-sm shadow-md hover:shadow-lg transition-shadow ${badgeClassName}`}>{item}</Badge>
+                       <Badge variant={badgeVariant} className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow ${badgeClassName}`}>
+                         {item}
+                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
                       <p className="font-semibold">{title.slice(0, -1)}:</p>
@@ -45,7 +59,7 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
           </ul>
         </ScrollArea>
       ) : (
-        <p className="text-sm text-muted-foreground italic">Aucun {title.toLowerCase().replace(/s$/, "")} détecté.</p>
+        <p className="text-sm text-muted-foreground italic">Aucun élément de ce type détecté.</p>
       )}
     </CardContent>
   </Card>
@@ -63,17 +77,22 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
 
   if (!analysisResults || analysisResults.summary.startsWith("Failed to analyze text")) {
     return (
-      <Card className="shadow-xl bg-card/70 backdrop-blur-md border-primary/30">
+      <Card className="shadow-xl bg-card/80 backdrop-blur-md border-primary/30">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl flex items-center gap-2 text-primary">
+          <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
             <SearchCheck className="h-6 w-6" />
             Analyse Initiale du Discours
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-center py-4">
-            {analysisResults?.summary || "Les résultats de l'analyse initiale apparaîtront ici une fois le texte soumis."}
+            {analysisResults?.summary || "Les résultats de l'analyse initiale du discours apparaîtront ici une fois le texte soumis et analysé."}
           </p>
+           {analysisResults?.summary.startsWith("Failed to analyze text") && (
+            <p className="text-destructive text-center py-2 bg-destructive/10 rounded-md">
+              {analysisResults.summary}
+            </p>
+          )}
         </CardContent>
       </Card>
     );
@@ -81,17 +100,20 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-xl animate-fadeIn bg-card/70 backdrop-blur-md border-primary/30">
+      <Card className="shadow-xl animate-fadeIn bg-card/80 backdrop-blur-md border-primary/30">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl flex items-center gap-2 text-primary">
+          <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
             <SearchCheck className="h-6 w-6" />
             Analyse Initiale du Discours
           </CardTitle>
-          <CardDescription>Résumé et éléments discursifs identifiés par l'IA avant classification contextuelle.</CardDescription>
+          <CardDescription>Résumé et éléments discursifs identifiés par l'IA de manière neutre. L'intention et l'intensité manipulative seront évaluées dans l'onglet "Classification".</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <h3 className="text-xl font-semibold font-headline text-accent">Résumé de l'Analyse :</h3>
-          <p className="text-foreground/90 leading-relaxed bg-secondary/20 p-4 rounded-md shadow-inner text-base">
+          <h3 className="text-lg font-semibold font-headline text-accent flex items-center gap-2">
+            <Lightbulb className="h-5 w-5" />
+            Résumé des Éléments Discursifs :
+          </h3>
+          <p className="text-foreground/90 leading-relaxed bg-muted/20 p-4 rounded-md shadow-inner text-sm">
             {analysisResults.summary || "Aucun résumé disponible."}
           </p>
         </CardContent>
@@ -102,22 +124,25 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading }: Cognitive
           title="Techniques Rhétoriques" 
           items={analysisResults.rhetoricalTechniques || []}
           icon={<BookText className="h-5 w-5" />}
-          badgeVariant="secondary"
-          badgeClassName="bg-gradient-to-br from-purple-500 to-pink-500 text-white"
+          badgeVariant="info"
+          badgeClassName="bg-gradient-to-br from-sky-500 to-cyan-400 text-white"
+          tooltipText="Ex: métaphores, ironie, hyperbole, questions rhétoriques."
         />
         <ItemList 
           title="Biais Cognitifs Potentiels" 
           items={analysisResults.cognitiveBiases || []}
           icon={<Eye className="h-5 w-5" />}
-          badgeVariant="default"
-          badgeClassName="bg-gradient-to-br from-blue-500 to-teal-500 text-white"
+          badgeVariant="warning"
+          badgeClassName="bg-gradient-to-br from-amber-500 to-yellow-400 text-black"
+          tooltipText="Ex: biais de confirmation, ancrage, effet de halo."
         />
         <ItemList 
           title="Faits Non Vérifiables" 
           items={analysisResults.unverifiableFacts || []}
           icon={<ShieldAlert className="h-5 w-5" />}
           badgeVariant="destructive"
-           badgeClassName="bg-gradient-to-br from-red-500 to-orange-500 text-white"
+           badgeClassName="bg-gradient-to-br from-red-500 to-orange-400 text-white"
+           tooltipText="Affirmations présentées comme des faits mais difficiles ou impossibles à vérifier objectivement."
         />
       </div>
       
