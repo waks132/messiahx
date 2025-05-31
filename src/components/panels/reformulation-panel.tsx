@@ -14,18 +14,15 @@ import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { downloadTxt } from "@/lib/utils";
 
-// This should ideally come from a shared types file or dynamically from prompts.json
-// For now, keep it aligned with public/prompts.json reformulationPrompts keys
-const reformulationStyles = [
-  { value: "neutral", label: "Neutre et Objectif" },
-  { value: "messianic", label: "Messianique / Prophétique" },
-  { value: "paranoid", label: "Paranoïaque / Conspirateur" },
-  { value: "analytical_rhetoric", label: "Analyse Rhétorique Détaillée" },
-];
+interface ReformulationStyleOption {
+  value: string;
+  label: string;
+}
 
 interface ReformulationPanelProps {
   reformulationInputText: string;
   setReformulationInputText: Dispatch<SetStateAction<string>>;
+  reformulationStyles: ReformulationStyleOption[]; // Receive styles as a prop
   selectedReformulationStyle: string;
   setSelectedReformulationStyle: Dispatch<SetStateAction<string>>;
   reformulationResult: ReformulateTextOutput | null;
@@ -37,6 +34,7 @@ interface ReformulationPanelProps {
 export function ReformulationPanel({ 
   reformulationInputText,
   setReformulationInputText,
+  reformulationStyles, // Use the passed prop
   selectedReformulationStyle,
   setSelectedReformulationStyle,
   reformulationResult,
@@ -55,7 +53,6 @@ export function ReformulationPanel({
       toast({ title: "Erreur", description: "Veuillez sélectionner un style de reformulation.", variant: "destructive" });
       return;
     }
-    // Clear previous results before new reformulation
     setReformulationResult(null); 
     await handleReformulate({ text: reformulationInputText, style: selectedReformulationStyle });
   };
@@ -63,6 +60,7 @@ export function ReformulationPanel({
   const handleClear = () => {
     setReformulationInputText("");
     setReformulationResult(null);
+    toast({ title: "Champs effacés", description: "Les champs de texte de reformulation ont été effacés." });
   };
 
   const handleDownload = () => {
@@ -195,3 +193,5 @@ export function ReformulationPanel({
     </Card>
   );
 }
+
+    

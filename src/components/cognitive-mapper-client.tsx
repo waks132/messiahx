@@ -49,43 +49,55 @@ const initialClassificationResult: ClassifyCognitiveCategoriesOutput = {
   }
 };
 
+// Moved from ReformulationPanel to be accessible for state initialization
+const reformulationStyles = [
+  { value: "neutral", label: "Neutre et Objectif" },
+  { value: "messianic", label: "Messianique / Prophétique" },
+  { value: "paranoid", label: "Paranoïaque / Conspirateur" },
+  { value: "analytical_rhetoric", label: "Analyse Rhétorique Détaillée" },
+];
+
 export default function CognitiveMapperClient() {
   const [inputText, setInputText] = useState<string>("");
   const [researchQueryText, setResearchQueryText] = useState<string>(""); 
-  
+  const [reformulationInputText, setReformulationInputText] = useState<string>("");
+
   const [analysisResults, setAnalysisResults] = useState<AnalyzeTextOutput>(initialAnalysisResults);
   const [criticalSummaryResult, setCriticalSummaryResult] = useState<GenerateCriticalSummaryOutput | null>(null);
   const [paranoidReadingResult, setParanoidReadingResult] = useState<DetectHiddenNarrativesOutput | null>(null);
   const [classificationResult, setClassificationResult] = useState<ClassifyCognitiveCategoriesOutput>(initialClassificationResult);
-  
+  const [reformulationResult, setReformulationResult] = useState<ReformulateTextOutput | null>(null);
+  const [contextualSearchResult, setContextualSearchResult] = useState<ResearchContextualOutput | null>(null);
+  const [manipulationSearchResult, setManipulationSearchResult] = useState<ResearchManipulationOutput | null>(null);
+
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState<boolean>(false);
   const [isGeneratingParanoid, setIsGeneratingParanoid] = useState<boolean>(false);
   const [isClassifying, setIsClassifying] = useState<boolean>(false);
-
-  const [reformulationInputText, setReformulationInputText] = useState<string>("");
-  const [selectedReformulationStyle, setSelectedReformulationStyle] = useState<string>("neutral");
-  const [reformulationResult, setReformulationResult] = useState<ReformulateTextOutput | null>(null);
   const [isReformulating, setIsReformulating] = useState<boolean>(false);
-
   const [isSearchingContextual, setIsSearchingContextual] = useState<boolean>(false);
-  const [contextualSearchResult, setContextualSearchResult] = useState<ResearchContextualOutput | null>(null);
   const [isSearchingManipulation, setIsSearchingManipulation] = useState<boolean>(false);
-  const [manipulationSearchResult, setManipulationSearchResult] = useState<ResearchManipulationOutput | null>(null);
-
 
   const [activeTab, setActiveTab] = useState<string>("input");
+  
+  // Initialize with a simple default, then set via useEffect
+  const [selectedReformulationStyle, setSelectedReformulationStyle] = useState<string>("neutral"); 
+
   const { toast } = useToast();
   
-  // Effect to prime reformulationInputText from inputText if it's empty
-  // or if inputText changes and reformulationInputText was based on the previous inputText.
   useEffect(() => {
-    if (inputText.trim() !== "") {
-      if (reformulationInputText.trim() === "" || reformulationInputText === inputText) {
-        setReformulationInputText(inputText);
-      }
+    // Set the default reformulation style once the component mounts and reformulationStyles is available
+    if (reformulationStyles.length > 0) {
+      setSelectedReformulationStyle(reformulationStyles[0].value);
     }
-  }, [inputText]); // Removed reformulationInputText from deps to avoid loop on its own change
+  }, []); // Empty dependency array means this runs once on mount
+
+  useEffect(() => {
+    // Pre-fill reformulationInputText if inputText changes and reformulationInputText is empty or was same as old inputText
+    if (inputText.trim() !== "" && (reformulationInputText.trim() === "" || reformulationInputText === inputText)) {
+        setReformulationInputText(inputText);
+    }
+  }, [inputText]); // Only run when inputText changes. Removed reformulationInputText from deps to avoid loops if not careful
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
@@ -98,9 +110,11 @@ export default function CognitiveMapperClient() {
     setParanoidReadingResult(null);
     setClassificationResult(initialClassificationResult); 
     
-    // Prime reformulation input if it's currently empty
-    if (reformulationInputText.trim() === "" && inputText.trim() !== "") {
+    if (reformulationInputText.trim() === "") {
       setReformulationInputText(inputText);
+    }
+    if (researchQueryText.trim() === "" && inputText.trim() !== "") {
+      setResearchQueryText(inputText);
     }
 
     try {
@@ -266,10 +280,10 @@ export default function CognitiveMapperClient() {
     }
   };
 
-
-  const isMainTextAvailable = !!inputText.trim();
+  const isMainAnalysisTextAvailable = !!inputText.trim();
   const isAnalysisDone = !!analysisResults && !analysisResults.summary.startsWith("Failed");
-  const isReformulationInputAvailable = !!reformulationInputText.trim();
+  const isReformulationTextAvailable = !!reformulationInputText.trim();
+  const isResearchQueryTextAvailable = !!researchQueryText.trim();
 
 
   return (
@@ -286,13 +300,13 @@ export default function CognitiveMapperClient() {
           <TabsTrigger value="classification" disabled={!isAnalysisDone && !isClassifying} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <BrainCircuit className="mr-2 h-4 w-4" /> Classification
           </TabsTrigger>
-          <TabsTrigger value="summary" disabled={!isMainTextAvailable && !isGeneratingSummary} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
+          <TabsTrigger value="summary" disabled={!isMainAnalysisTextAvailable && !isGeneratingSummary && !isAnalysisDone} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Quote className="mr-2 h-4 w-4" /> Résumé Critique
           </TabsTrigger>
-          <TabsTrigger value="reformulation" disabled={!isReformulationInputAvailable && !isReformulating} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
+          <TabsTrigger value="reformulation" disabled={!isReformulationTextAvailable && !isReformulating} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <PenTool className="mr-2 h-4 w-4" /> Reformulation
           </TabsTrigger>
-          <TabsTrigger value="paranoid" disabled={!isMainTextAvailable && !isGeneratingParanoid} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
+          <TabsTrigger value="paranoid" disabled={!isMainAnalysisTextAvailable && !isGeneratingParanoid} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Drama className="mr-2 h-4 w-4" /> Lecture Paranoïaque
           </TabsTrigger>
           <TabsTrigger value="config" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
@@ -371,19 +385,20 @@ export default function CognitiveMapperClient() {
             criticalSummaryResult={criticalSummaryResult}
             handleGenerateSummary={handleGenerateSummary}
             isLoading={isGeneratingSummary}
-            isBaseTextAvailable={isMainTextAvailable}
+            isBaseTextAvailable={isMainAnalysisTextAvailable || isAnalysisDone}
           />
         </TabsContent>
         <TabsContent value="reformulation">
            <ReformulationPanel
             reformulationInputText={reformulationInputText}
             setReformulationInputText={setReformulationInputText}
+            reformulationStyles={reformulationStyles} // Pass the styles array
             selectedReformulationStyle={selectedReformulationStyle}
             setSelectedReformulationStyle={setSelectedReformulationStyle}
             reformulationResult={reformulationResult}
             setReformulationResult={setReformulationResult}
             isReformulating={isReformulating}
-            handleReformulate={handleReformulate} 
+            handleReformulate={handleReformulate}
           />
         </TabsContent>
         <TabsContent value="paranoid">
@@ -391,7 +406,7 @@ export default function CognitiveMapperClient() {
             paranoidReadingResult={paranoidReadingResult}
             handleGenerateParanoidReading={handleGenerateParanoidReading}
             isLoading={isGeneratingParanoid}
-            isBaseTextAvailable={isMainTextAvailable}
+            isBaseTextAvailable={isMainAnalysisTextAvailable}
           />
         </TabsContent>
         <TabsContent value="config">
@@ -401,6 +416,5 @@ export default function CognitiveMapperClient() {
     </div>
   );
 }
-    
 
     
