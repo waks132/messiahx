@@ -5,11 +5,11 @@ import { analyzeText as analyzeTextForManipulationFlow, type AnalyzeTextInput, t
 import { generateCriticalSummary as generateCriticalSummaryFlow, type GenerateCriticalSummaryInput, type GenerateCriticalSummaryOutput } from '@/ai/flows/generate-critical-summary';
 import { detectHiddenNarratives as detectHiddenNarrativesFlow, type DetectHiddenNarrativesInput, type DetectHiddenNarrativesOutput } from '@/ai/flows/detect-hidden-narratives';
 import { classifyCognitiveCategories as classifyCognitiveCategoriesFlow, type ClassifyCognitiveCategoriesInput, type ClassifyCognitiveCategoriesOutput } from '@/ai/flows/classify-cognitive-categories';
+import { reformulateText as reformulateTextFlow, type ReformulateTextInput, type ReformulateTextOutput } from '@/ai/flows/reformulate-text';
 
 export async function analyzeTextAction(input: AnalyzeTextInput): Promise<AnalyzeTextOutput> {
   try {
     const result = await analyzeTextForManipulationFlow(input);
-    // Ensure all arrays are present, even if empty, to prevent downstream errors
     return {
       summary: result.summary || "Analysis summary not available.",
       rhetoricalTechniques: result.rhetoricalTechniques || [],
@@ -30,6 +30,10 @@ export async function analyzeTextAction(input: AnalyzeTextInput): Promise<Analyz
 export async function generateCriticalSummaryAction(input: GenerateCriticalSummaryInput): Promise<GenerateCriticalSummaryOutput> {
   try {
     const result = await generateCriticalSummaryFlow(input);
+    if (!result || typeof result.summary !== 'string') {
+      console.error("Invalid result from generateCriticalSummaryFlow:", result);
+      return { summary: "Failed to generate critical summary: Invalid response from AI." };
+    }
     return result;
   } catch (error) {
     console.error("Error in generateCriticalSummaryAction:", error);
@@ -40,6 +44,10 @@ export async function generateCriticalSummaryAction(input: GenerateCriticalSumma
 export async function detectHiddenNarrativesAction(input: DetectHiddenNarrativesInput): Promise<DetectHiddenNarrativesOutput> {
   try {
     const result = await detectHiddenNarrativesFlow(input);
+    if (!result || typeof result.hiddenNarratives !== 'string') {
+      console.error("Invalid result from detectHiddenNarrativesFlow:", result);
+      return { hiddenNarratives: "Failed to detect hidden narratives: Invalid response from AI." };
+    }
     return result;
   } catch (error) {
     console.error("Error in detectHiddenNarrativesAction:", error);
@@ -63,6 +71,26 @@ export async function classifyCognitiveCategoriesAction(input: ClassifyCognitive
     return {
       classifiedCategories: [],
       overallClassification: { type: 'other', score: 0, reasoning: `Failed to classify cognitive categories: ${errorMessage}` }
+    };
+  }
+}
+
+export async function reformulateTextAction(input: ReformulateTextInput): Promise<ReformulateTextOutput> {
+  try {
+    const result = await reformulateTextFlow(input);
+    if (!result || typeof result.reformulatedText !== 'string' || typeof result.styleUsed !== 'string') {
+      console.error("Invalid result from reformulateTextFlow:", result);
+      return { 
+        reformulatedText: "Failed to reformulate text: Invalid response from AI.",
+        styleUsed: input.style 
+      };
+    }
+    return result;
+  } catch (error) {
+    console.error("Error in reformulateTextAction:", error);
+    return { 
+      reformulatedText: `Failed to reformulate text: ${error instanceof Error ? error.message : "Unknown error"}`,
+      styleUsed: input.style 
     };
   }
 }

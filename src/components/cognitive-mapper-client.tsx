@@ -8,15 +8,23 @@ import { CognitiveAnalysisPanel } from "@/components/panels/cognitive-analysis-p
 import { CriticalSummaryPanel, type AnalysisStyle } from "@/components/panels/critical-summary-panel";
 import { ParanoidReadingPanel } from "@/components/panels/paranoid-reading-panel";
 import { CognitiveClassificationPanel } from "@/components/panels/cognitive-classification-panel";
-import PromptConfigPage from "@/app/config/prompts/page"; // Assuming this is where it will be
-import { analyzeTextAction, generateCriticalSummaryAction, detectHiddenNarrativesAction, classifyCognitiveCategoriesAction } from "@/app/actions";
+import { ReformulationPanel } from "@/components/panels/reformulation-panel";
+import PromptConfigPage from "@/app/config/prompts/page";
+import { 
+  analyzeTextAction, 
+  generateCriticalSummaryAction, 
+  detectHiddenNarrativesAction, 
+  classifyCognitiveCategoriesAction,
+  reformulateTextAction 
+} from "@/app/actions";
 import type { AnalyzeTextOutput, AnalyzeTextInput } from '@/ai/flows/analyze-text-for-manipulation';
 import type { GenerateCriticalSummaryOutput } from '@/ai/flows/generate-critical-summary';
 import type { DetectHiddenNarrativesOutput } from '@/ai/flows/detect-hidden-narratives';
 import type { ClassifyCognitiveCategoriesInput, ClassifyCognitiveCategoriesOutput } from '@/ai/flows/classify-cognitive-categories';
+import type { ReformulateTextInput, ReformulateTextOutput } from '@/ai/flows/reformulate-text';
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Quote, Drama, Settings2, BrainCircuit, SearchCheck, SlidersHorizontal } from 'lucide-react';
+import { FileText, Quote, Drama, BrainCircuit, SearchCheck, SlidersHorizontal, PenTool, Settings } from 'lucide-react';
 
 const initialAnalysisResults: AnalyzeTextOutput = {
   summary: "",
@@ -45,9 +53,21 @@ export default function CognitiveMapperClient() {
   const [isGeneratingSummary, setIsGeneratingSummary] = useState<boolean>(false);
   const [isGeneratingParanoid, setIsGeneratingParanoid] = useState<boolean>(false);
   const [isClassifying, setIsClassifying] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>("input");
 
+  // State for Reformulation
+  const [reformulationInputText, setReformulationInputText] = useState<string>("");
+  const [selectedReformulationStyle, setSelectedReformulationStyle] = useState<string>("neutral"); // Default style
+  const [reformulationResult, setReformulationResult] = useState<ReformulateTextOutput | null>(null);
+  const [isReformulating, setIsReformulating] = useState<boolean>(false);
+
+  const [activeTab, setActiveTab] = useState<string>("input");
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (inputText && !reformulationInputText) {
+      setReformulationInputText(inputText);
+    }
+  }, [inputText, reformulationInputText]);
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
@@ -59,6 +79,8 @@ export default function CognitiveMapperClient() {
     setCriticalSummaryResult(null); 
     setParanoidReadingResult(null);
     setClassificationResult(initialClassificationResult); 
+    setReformulationInputText(inputText); // Update reformulation input when main text changes
+    setReformulationResult(null); // Clear previous reformulation results
 
     try {
       const results = await analyzeTextAction({ text: inputText });
@@ -78,14 +100,14 @@ export default function CognitiveMapperClient() {
   };
 
   const handleGenerateSummary = async (style: AnalysisStyle) => {
-    if (!inputText.trim()) {
+    if (!inputText.trim() && !analysisResults.summary) {
       toast({ title: "Erreur", description: "Aucun texte à résumer.", variant: "destructive" });
       return;
     }
     setIsGeneratingSummary(true);
     setCriticalSummaryResult(null);
     try {
-      const textToSummarize = (analysisResults && !analysisResults.summary.startsWith("Failed")) ? analysisResults.summary : inputText;
+      const textToSummarize = (analysisResults.summary && !analysisResults.summary.startsWith("Failed")) ? analysisResults.summary : inputText;
       const summary = await generateCriticalSummaryAction({ analyzedText: textToSummarize, analysisStyle: style });
       setCriticalSummaryResult(summary);
       if (summary.summary.startsWith("Failed to generate critical summary")) {
@@ -154,31 +176,59 @@ export default function CognitiveMapperClient() {
     }
   };
 
+  const handleReformulate = async (input: ReformulateTextInput) => {
+    if (!input.text.trim()) {
+      toast({ title: "Erreur", description: "Le champ de texte pour la reformulation est vide.", variant: "destructive" });
+      return;
+    }
+    setIsReformulating(true);
+    setReformulationResult(null);
+    try {
+      const result = await reformulateTextAction(input);
+      setReformulationResult(result);
+      if (result.reformulatedText.startsWith("Failed to reformulate") || result.reformulatedText.startsWith("Error:") || result.reformulatedText.startsWith("The model did not provide")) {
+        toast({ title: "Erreur de Reformulation", description: result.reformulatedText, variant: "destructive" });
+      } else {
+        toast({ title: "Succès", description: `Texte reformulé avec le style "${result.styleUsed}".` });
+      }
+    } catch (error: any) {
+      toast({ title: "Erreur de Reformulation", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive" });
+      setReformulationResult({ reformulatedText: `Échec de la reformulation : ${error.message || "Erreur inconnue"}`, styleUsed: input.style });
+    } finally {
+      setIsReformulating(false);
+    }
+  };
+
   const isBaseTextAvailable = !!inputText.trim();
   const isBaseAnalysisDone = !!analysisResults && !analysisResults.summary.startsWith("Failed");
+  const isReformulationInputAvailable = !!reformulationInputText.trim();
+
 
   return (
-    <div className="w-full max-w-6xl mx-auto"> {/* Increased max-width for a wider layout */}
+    <div className="w-full max-w-6xl mx-auto"> 
       <Logo />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 mb-6 bg-card/80 backdrop-blur-sm p-1.5 rounded-lg shadow-md">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 mb-6 bg-card/80 backdrop-blur-sm p-1.5 rounded-lg shadow-md">
           <TabsTrigger value="input" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <FileText className="mr-2 h-4 w-4" /> Entrée
           </TabsTrigger>
           <TabsTrigger value="analysis" disabled={!isBaseAnalysisDone && !isAnalyzing} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <SearchCheck className="mr-2 h-4 w-4" /> Analyse Initiale
           </TabsTrigger>
-           <TabsTrigger value="classification" disabled={!isBaseAnalysisDone && !isClassifying} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
+          <TabsTrigger value="classification" disabled={!isBaseAnalysisDone && !isClassifying} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <BrainCircuit className="mr-2 h-4 w-4" /> Classification
           </TabsTrigger>
           <TabsTrigger value="summary" disabled={!isBaseTextAvailable && !isGeneratingSummary} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Quote className="mr-2 h-4 w-4" /> Résumé Critique
           </TabsTrigger>
+          <TabsTrigger value="reformulation" disabled={!isReformulationInputAvailable && !isReformulating} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
+            <PenTool className="mr-2 h-4 w-4" /> Reformulation
+          </TabsTrigger>
           <TabsTrigger value="paranoid" disabled={!isBaseTextAvailable && !isGeneratingParanoid} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
             <Drama className="mr-2 h-4 w-4" /> Lecture Paranoïaque
           </TabsTrigger>
           <TabsTrigger value="config" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <SlidersHorizontal className="mr-2 h-4 w-4" /> Configuration Prompts
+            <Settings className="mr-2 h-4 w-4" /> Configuration Prompts
           </TabsTrigger>
         </TabsList>
 
@@ -193,7 +243,7 @@ export default function CognitiveMapperClient() {
         <TabsContent value="analysis">
           <CognitiveAnalysisPanel analysisResults={analysisResults} isLoading={isAnalyzing} />
         </TabsContent>
-         <TabsContent value="classification">
+        <TabsContent value="classification">
           <CognitiveClassificationPanel
             classificationResult={classificationResult}
             handleClassifyCognitiveCategories={handleClassifyCognitiveCategories}
@@ -209,6 +259,18 @@ export default function CognitiveMapperClient() {
             isBaseTextAvailable={isBaseTextAvailable}
           />
         </TabsContent>
+        <TabsContent value="reformulation">
+           <ReformulationPanel
+            reformulationInputText={reformulationInputText}
+            setReformulationInputText={setReformulationInputText}
+            selectedReformulationStyle={selectedReformulationStyle}
+            setSelectedReformulationStyle={setSelectedReformulationStyle}
+            reformulationResult={reformulationResult}
+            setReformulationResult={setReformulationResult}
+            isReformulating={isReformulating}
+            handleReformulate={handleReformulate} 
+          />
+        </TabsContent>
         <TabsContent value="paranoid">
           <ParanoidReadingPanel 
             paranoidReadingResult={paranoidReadingResult}
@@ -218,10 +280,6 @@ export default function CognitiveMapperClient() {
           />
         </TabsContent>
         <TabsContent value="config">
-          {/* The PromptConfigPage component will be rendered here.
-              It needs to be created in src/app/config/prompts/page.tsx as per the plan.
-              For now, I'll assume it exists and is imported.
-          */}
           <PromptConfigPage />
         </TabsContent>
       </Tabs>
