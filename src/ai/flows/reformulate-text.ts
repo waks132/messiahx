@@ -84,10 +84,9 @@ const reformulateTextFlow = ai.defineFlow(
       const systemPromptContent = selectedPrompts.system_prompt_template + " Assurez-vous de fournir une réponse complète, détaillée, substantielle et bien développée.";
       const userPromptContent = selectedPrompts.user_prompt_template.replace('{text}', text);
       
-      // Using systemInstruction for the system prompt
       const {text: reformulatedTextResult} = await ai.generate({
-        prompt: [{role: 'user', content: [{text: userPromptContent}]}], // User prompt remains in the main prompt field
-        systemInstruction: [{text: systemPromptContent}], // System prompt moved to systemInstruction
+        prompt: [{role: 'user', content: [{text: userPromptContent}]}],
+        systemInstruction: [{text: systemPromptContent}],
         output: {format: 'text'}, 
         config: { temperature: 0.7 } 
       });
@@ -108,11 +107,19 @@ const reformulateTextFlow = ai.defineFlow(
       };
     } catch (error: any) {
       console.error(`Error during reformulation for style "${style}":`, error);
-      // Ensure the error message is captured and returned
-      let errorMessage = error.message || "Unknown error";
-      if (error.cause) { // Genkit errors often have a cause
-        errorMessage = `${errorMessage} - Cause: ${JSON.stringify(error.cause)}`;
+      let errorMessage = "Unknown error during reformulation.";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        // Check for Genkit specific error details if available
+        if ((error as any).cause?.message) {
+          errorMessage += ` - Cause: ${(error as any).cause.message}`;
+        } else if ((error as any).details) {
+           errorMessage += ` - Details: ${JSON.stringify((error as any).details)}`;
+        }
+      } else if (typeof error === 'string') {
+        errorMessage = error;
       }
+      
       return {
         reformulatedText: `Failed to reformulate text with style "${style}": ${errorMessage}. Veuillez fournir une réponse détaillée, complète, substantielle et bien développée.`,
         styleUsed: style,

@@ -7,12 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { FileText, UploadCloud, Sparkles, Search, ShieldAlert } from "lucide-react";
+import { FileText, UploadCloud, Sparkles, Search, ShieldAlert, Telescope, MessageSquareText } from "lucide-react";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 interface InputPanelProps {
   inputText: string;
   setInputText: Dispatch<SetStateAction<string>>;
+  researchQueryText: string;
+  setResearchQueryText: Dispatch<SetStateAction<string>>;
   handleAnalyze: () => Promise<void>;
   isAnalyzing: boolean;
   handleContextualSearch: () => Promise<void>;
@@ -24,6 +26,8 @@ interface InputPanelProps {
 export function InputPanel({ 
   inputText, 
   setInputText, 
+  researchQueryText,
+  setResearchQueryText,
   handleAnalyze, 
   isAnalyzing,
   handleContextualSearch,
@@ -56,26 +60,26 @@ export function InputPanel({
       <CardHeader>
         <CardTitle className="font-headline text-2xl flex items-center gap-2 text-primary">
           <FileText className="h-6 w-6" />
-          Saisie du Texte Utilisateur
+          Saisie du Texte & Recherche Contextuelle
         </CardTitle>
-        <CardDescription>Entrez ou chargez le texte à analyser pour la cartographie cognitive et les recherches contextuelles.</CardDescription>
+        <CardDescription>Entrez le texte pour l'analyse cognitive principale, ou utilisez le champ ci-dessous pour des recherches contextuelles spécifiques.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="text-input" className="text-lg font-semibold text-foreground/90">Entrez votre texte ici :</Label>
+          <Label htmlFor="text-input" className="text-lg font-semibold text-foreground/90">Texte pour Analyse Cognitive Principale :</Label>
           <Textarea
             id="text-input"
             placeholder="Collez votre texte, écrivez directement, ou chargez un fichier .txt ci-dessous..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            rows={12}
-            className="min-h-[250px] border-2 border-input focus:border-accent transition-colors duration-300 shadow-inner rounded-lg p-4 bg-background/80 text-base"
+            rows={10}
+            className="min-h-[200px] border-2 border-input focus:border-accent transition-colors duration-300 shadow-inner rounded-lg p-4 bg-background/80 text-base"
             disabled={isAnyLoading}
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="file-upload" className="text-lg font-semibold text-foreground/90">Ou chargez un fichier .txt :</Label>
+          <Label htmlFor="file-upload" className="text-lg font-semibold text-foreground/90">Ou chargez un fichier .txt pour l'analyse principale :</Label>
           <div className="flex items-center gap-3 p-3 border border-dashed border-border rounded-lg bg-muted/20 hover:border-accent transition-colors">
             <UploadCloud className="h-8 w-8 text-muted-foreground" />
             <Input
@@ -103,51 +107,62 @@ export function InputPanel({
           ) : (
             <>
               <Sparkles className="mr-2 h-5 w-5" />
-              Lancer l'Analyse Initiale du Discours
+              Lancer l'Analyse Initiale du Discours (sur le texte ci-dessus)
             </>
           )}
         </Button>
+
+        <div className="border-t border-border/30 pt-6 space-y-4">
+            <Label htmlFor="research-query-input" className="text-lg font-semibold text-foreground/90">Termes pour Recherche Contextuelle / Analyse de Manipulation :</Label>
+            <Input
+                id="research-query-input"
+                placeholder="Entrez un sujet, une phrase clé, ou un extrait de texte pour une recherche spécifique..."
+                value={researchQueryText}
+                onChange={(e) => setResearchQueryText(e.target.value)}
+                className="border-2 border-input focus:border-accent transition-colors duration-300 shadow-inner rounded-lg p-3 bg-background/80 text-base"
+                disabled={isAnyLoading}
+            />
+            <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                    variant="outline"
+                    onClick={handleContextualSearch} 
+                    disabled={isAnyLoading || !researchQueryText.trim()} 
+                    className="w-full sm:flex-1"
+                >
+                    {isSearchingContextual ? (
+                    <>
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2">Recherche...</span>
+                    </>
+                    ) : (
+                    <>
+                        <Telescope className="mr-2 h-4 w-4" />
+                        Recherche Contextuelle (sur le terme ci-dessus)
+                    </>
+                    )}
+                </Button>
+                <Button 
+                    variant="outline"
+                    onClick={handleManipulationSearch} 
+                    disabled={isAnyLoading || !researchQueryText.trim()} 
+                    className="w-full sm:flex-1"
+                >
+                    {isSearchingManipulation ? (
+                    <>
+                        <LoadingSpinner size="sm" />
+                        <span className="ml-2">Analyse Sonar...</span>
+                    </>
+                    ) : (
+                    <>
+                        <MessageSquareText className="mr-2 h-4 w-4" />
+                        Analyse de Manipulation (sur le terme ci-dessus)
+                    </>
+                    )}
+                </Button>
+            </div>
+        </div>
       </CardContent>
-      <CardFooter className="pt-4 border-t border-border/30 flex flex-col sm:flex-row gap-3">
-         <Button 
-            variant="outline"
-            onClick={handleContextualSearch} 
-            disabled={isAnyLoading || !inputText.trim()} 
-            className="w-full sm:w-auto"
-          >
-            {isSearchingContextual ? (
-              <>
-                <LoadingSpinner size="sm" />
-                <span className="ml-2">Recherche...</span>
-              </>
-            ) : (
-              <>
-                <Search className="mr-2 h-4 w-4" />
-                Recherche Contextuelle (Perplexity-like)
-              </>
-            )}
-          </Button>
-          <Button 
-            variant="outline"
-            onClick={handleManipulationSearch} 
-            disabled={isAnyLoading || !inputText.trim()} 
-            className="w-full sm:w-auto"
-          >
-            {isSearchingManipulation ? (
-              <>
-                <LoadingSpinner size="sm" />
-                <span className="ml-2">Analyse Sonar...</span>
-              </>
-            ) : (
-              <>
-                <ShieldAlert className="mr-2 h-4 w-4" />
-                Analyse de Manipulation (Sonar-like)
-              </>
-            )}
-          </Button>
-      </CardFooter>
     </Card>
   );
 }
-
     
