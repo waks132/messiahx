@@ -51,7 +51,8 @@ const initialClassificationResult: ClassifyCognitiveCategoriesOutput = {
 
 export default function CognitiveMapperClient() {
   const [inputText, setInputText] = useState<string>("");
-  const [researchQueryText, setResearchQueryText] = useState<string>("");
+  const [researchQueryText, setResearchQueryText] = useState<string>(""); // State for the dedicated research input
+  
   const [analysisResults, setAnalysisResults] = useState<AnalyzeTextOutput>(initialAnalysisResults);
   const [criticalSummaryResult, setCriticalSummaryResult] = useState<GenerateCriticalSummaryOutput | null>(null);
   const [paranoidReadingResult, setParanoidReadingResult] = useState<DetectHiddenNarrativesOutput | null>(null);
@@ -80,7 +81,11 @@ export default function CognitiveMapperClient() {
     if (inputText && !reformulationInputText) {
       setReformulationInputText(inputText);
     }
-  }, [inputText, reformulationInputText]);
+     if (inputText && !researchQueryText) {
+      // Optionally prime research query with main input, or keep it separate
+      // setResearchQueryText(inputText); 
+    }
+  }, [inputText, reformulationInputText, researchQueryText]);
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
@@ -92,7 +97,7 @@ export default function CognitiveMapperClient() {
     setCriticalSummaryResult(null); 
     setParanoidReadingResult(null);
     setClassificationResult(initialClassificationResult); 
-    setReformulationInputText(inputText); 
+    if (!reformulationInputText.trim()) setReformulationInputText(inputText); 
     setReformulationResult(null); 
     setContextualSearchResult(null);
     setManipulationSearchResult(null);
@@ -215,16 +220,16 @@ export default function CognitiveMapperClient() {
   };
 
   const handleContextualSearch = async () => {
-    if (!researchQueryText.trim()) {
+    if (!researchQueryText.trim()) { // Use researchQueryText here
       toast({ title: "Erreur", description: "Le champ de recherche contextuelle est vide.", variant: "destructive" });
       return;
     }
     setIsSearchingContextual(true);
     setContextualSearchResult(null);
     try {
-      const result = await researchContextualAction({ text: researchQueryText });
+      const result = await researchContextualAction({ text: researchQueryText }); // Use researchQueryText here
       setContextualSearchResult(result);
-      if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error")) {
+      if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error") || result.researchResult.startsWith("Veuillez me fournir le texte")) {
         toast({ title: "Erreur de Recherche Contextuelle", description: result.researchResult, variant: "destructive", duration: 8000 });
       } else {
         toast({ title: "Recherche Contextuelle Terminée", description: `Résultat disponible.`, duration: 5000 });
@@ -238,14 +243,14 @@ export default function CognitiveMapperClient() {
   };
 
   const handleManipulationSearch = async () => {
-    if (!researchQueryText.trim()) {
+    if (!researchQueryText.trim()) { // Use researchQueryText here
       toast({ title: "Erreur", description: "Le champ d'analyse de manipulation est vide.", variant: "destructive" });
       return;
     }
     setIsSearchingManipulation(true);
     setManipulationSearchResult(null);
     try {
-      const result = await researchManipulationAction({ text: researchQueryText });
+      const result = await researchManipulationAction({ text: researchQueryText }); // Use researchQueryText here
       setManipulationSearchResult(result);
        if (result.manipulationInsights.startsWith("Failed") || result.manipulationInsights.startsWith("Error")) {
         toast({ title: "Erreur Analyse Manipulation", description: result.manipulationInsights, variant: "destructive", duration: 8000 });
@@ -390,6 +395,4 @@ export default function CognitiveMapperClient() {
     </div>
   );
 }
-
     
-
