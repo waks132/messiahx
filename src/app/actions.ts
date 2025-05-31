@@ -8,6 +8,7 @@ import { classifyCognitiveCategories as classifyCognitiveCategoriesFlow, type Cl
 import { reformulateText as reformulateTextFlow, type ReformulateTextInput, type ReformulateTextOutput } from '@/ai/flows/reformulate-text';
 import { researchContextual as researchContextualFlow, type ResearchContextualInput, type ResearchContextualOutput } from '@/ai/flows/research-contextual-flow';
 import { researchManipulation as researchManipulationFlow, type ResearchManipulationInput, type ResearchManipulationOutput } from '@/ai/flows/research-manipulation-flow';
+import { generatePersonaProfile as generatePersonaProfileFlow, type GeneratePersonaProfileInput, type GeneratePersonaProfileOutput } from '@/ai/flows/generate-persona-profile-flow';
 
 
 export async function analyzeTextAction(input: AnalyzeTextInput): Promise<AnalyzeTextOutput> {
@@ -169,4 +170,40 @@ export async function researchManipulationAction(input: ResearchManipulationInpu
     return { manipulationInsights: errorMessage };
   }
 }
+
+export async function generatePersonaProfileAction(input: GeneratePersonaProfileInput): Promise<GeneratePersonaProfileOutput> {
+  try {
+    const result = await generatePersonaProfileFlow(input);
+    // Basic validation, more complex validation might be needed depending on schema
+    if (!result || !result.personaProfile || !result.personaProfile.name) {
+       const lang = input.language || 'fr';
+       const errorMsg = lang === 'fr' ? 'Réponse invalide de la génération de profil.' : 'Invalid response from persona profile generation.';
+      throw new Error(errorMsg);
+    }
+    return result;
+  } catch (error) {
+    console.error("Error in generatePersonaProfileAction:", error);
+    const lang = input.language || 'fr';
+    const errorMessage = lang === 'fr' 
+      ? `Échec de la génération du profil de persona : ${error instanceof Error ? error.message : "Erreur inconnue"}`
+      : `Failed to generate persona profile: ${error instanceof Error ? error.message : "Unknown error"}`;
     
+    // Return a valid (minimal) error structure matching GeneratePersonaProfileOutput
+    return {
+      personaProfile: {
+        name: input.personaName || (lang === 'fr' ? "Persona Indéfini (Erreur)" : "Undefined Persona (Error)"),
+        tagline: errorMessage,
+        overallDescription: lang === 'fr' ? "Description indisponible en raison d'une erreur." : "Description unavailable due to an error.",
+        identitySignatures: {
+          ame: { concept: "", coreValues: [], toneAndVoice: "", keyStatements: [] },
+          systemeNerveux: { concept: "", coreCapabilities: [], methodology: { name: "", steps: [] }, functionalOutputs: [] }
+        },
+        operationalFormats: {
+          markdown: { purpose: "", usageContext: "", relationToJson: "" },
+          json: { purpose: "", usageContext: "", status: "" },
+          synchronizationNotice: ""
+        }
+      }
+    };
+  }
+}
