@@ -7,8 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PenTool, Send, Download, Trash2 } from "lucide-react";
-import type { ReformulateTextOutput, ReformulateTextInput } from "@/ai/flows/reformulate-text"; // No longer need ReformulateTextInput here
+import { PenTool, Send, Download, Trash2, Copy } from "lucide-react";
+import type { ReformulateTextOutput } from "@/ai/flows/reformulate-text"; 
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,7 +28,7 @@ interface ReformulationPanelProps {
   reformulationResult: ReformulateTextOutput | null;
   setReformulationResult: Dispatch<SetStateAction<ReformulateTextOutput | null>>;
   isReformulating: boolean;
-  handleReformulate: () => Promise<void>; // Changed signature
+  handleReformulate: () => Promise<void>; 
   currentLanguage: string;
 }
 
@@ -49,10 +49,12 @@ const panelLabels: Record<string, Record<string, string>> = {
     styleLabel: "Style",
     unknownStyle: "Inconnu",
     downloadButton: "Télécharger",
+    copyButton: "Copier le Texte Reformulé",
     noReformulationGenerated: "Aucune reformulation générée.",
     clickToSeeResults: "Cliquez sur \"Lancer la Reformulation\" pour voir le résultat.",
     footerNote: "Les reformulations sont générées par IA et visent à être substantielles. La qualité dépend du style choisi et du texte source.",
     errorToastTitle: "Erreur",
+    successToastTitle: "Succès",
     emptyTextError: "Veuillez entrer un texte à reformuler.",
     noStyleError: "Veuillez sélectionner un style de reformulation.",
     clearToastTitle: "Champs effacés",
@@ -62,6 +64,8 @@ const panelLabels: Record<string, Record<string, string>> = {
     reformulationErrorPrefix: "Erreur:",
     modelDidNotProvidePrefix: "Le modèle n'a pas fourni",
     failedToReformulatePrefix: "Échec de la reformulation",
+    copiedToClipboard: "Texte reformulé copié !",
+    failedToCopy: "Échec de la copie.",
   },
   en: {
     title: "Text Reformulation Module",
@@ -79,10 +83,12 @@ const panelLabels: Record<string, Record<string, string>> = {
     styleLabel: "Style",
     unknownStyle: "Unknown",
     downloadButton: "Download",
+    copyButton: "Copy Reformulated Text",
     noReformulationGenerated: "No reformulation generated.",
     clickToSeeResults: "Click \"Start Reformulation\" to see the result.",
     footerNote: "Reformulations are AI-generated and aim to be substantial. Quality depends on the chosen style and source text.",
     errorToastTitle: "Error",
+    successToastTitle: "Success",
     emptyTextError: "Please enter text to reformulate.",
     noStyleError: "Please select a reformulation style.",
     clearToastTitle: "Fields cleared",
@@ -92,6 +98,8 @@ const panelLabels: Record<string, Record<string, string>> = {
     reformulationErrorPrefix: "Error:",
     modelDidNotProvidePrefix: "The model did not provide",
     failedToReformulatePrefix: "Failed to reformulate",
+    copiedToClipboard: "Reformulated text copied!",
+    failedToCopy: "Failed to copy.",
   }
 };
 
@@ -120,13 +128,24 @@ export function ReformulationPanel({
       return;
     }
     setReformulationResult(null); 
-    await handleReformulate(); // Removed input from here, parent (CognitiveMapperClient) will construct it
+    await handleReformulate(); 
   };
 
   const handleClear = () => {
     setReformulationInputText("");
     setReformulationResult(null);
     toast({ title: labels.clearToastTitle, description: labels.clearToastDescription });
+  };
+
+  const handleCopyToClipboard = async (textToCopy: string | undefined) => {
+    if (!textToCopy) return;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      toast({ title: labels.copiedToClipboard });
+    } catch (err) {
+      toast({ title: labels.failedToCopy, variant: "destructive" });
+      console.error('Failed to copy: ', err);
+    }
   };
 
   const handleDownload = () => {
@@ -145,8 +164,6 @@ export function ReformulationPanel({
     }
   };
   
-  const successToastTitle = panelLabels[currentLanguage]?.successToastTitle || panelLabels.fr.successToastTitle;
-
 
   return (
     <Card className="shadow-xl bg-card/80 backdrop-blur-md border-primary/30">
@@ -234,14 +251,21 @@ export function ReformulationPanel({
                 <CardTitle className="text-xl text-primary">
                   {labels.reformulatedTextTitle} ({labels.styleLabel}: <span className="font-semibold capitalize">{reformulationResult.styleUsed?.replace(/_/g, ' ') || labels.unknownStyle}</span>)
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={handleDownload} 
-                        disabled={!reformulationResult.reformulatedText || reformulationResult.reformulatedText.startsWith(labels.reformulationErrorPrefix) || reformulationResult.reformulatedText.startsWith(labels.modelDidNotProvidePrefix) || reformulationResult.reformulatedText.startsWith(labels.failedToReformulatePrefix)}>
-                  <Download className="mr-2 h-4 w-4" />
-                  {labels.downloadButton}
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(reformulationResult?.reformulatedText)} 
+                            disabled={!reformulationResult?.reformulatedText || reformulationResult.reformulatedText.startsWith(labels.reformulationErrorPrefix) || reformulationResult.reformulatedText.startsWith(labels.modelDidNotProvidePrefix) || reformulationResult.reformulatedText.startsWith(labels.failedToReformulatePrefix)}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    {labels.copyButton}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDownload} 
+                            disabled={!reformulationResult.reformulatedText || reformulationResult.reformulatedText.startsWith(labels.reformulationErrorPrefix) || reformulationResult.reformulatedText.startsWith(labels.modelDidNotProvidePrefix) || reformulationResult.reformulatedText.startsWith(labels.failedToReformulatePrefix)}>
+                    <Download className="mr-2 h-4 w-4" />
+                    {labels.downloadButton}
+                    </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-auto max-h-96 min-h-[120px] pr-3">
+                <ScrollArea className="h-auto max-h-[500px] min-h-[120px] pr-3">
                   {reformulationResult.reformulatedText.startsWith(labels.reformulationErrorPrefix) || reformulationResult.reformulatedText.startsWith(labels.modelDidNotProvidePrefix) || reformulationResult.reformulatedText.startsWith(labels.failedToReformulatePrefix) ? (
                     <p className="text-destructive leading-relaxed whitespace-pre-wrap p-4 bg-destructive/10 rounded-md">
                       {reformulationResult.reformulatedText}

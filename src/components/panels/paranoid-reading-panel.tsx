@@ -3,9 +3,11 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Drama } from "lucide-react"; 
+import { Drama, Copy } from "lucide-react"; 
 import type { DetectHiddenNarrativesOutput } from "@/ai/flows/detect-hidden-narratives";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ParanoidReadingPanelProps {
   paranoidReadingResult: DetectHiddenNarrativesOutput | null;
@@ -24,6 +26,9 @@ const panelLabels: Record<string, Record<string, string>> = {
     resultsTitle: "Narratifs Cachés Détectés :",
     clickToSeeResults: "Cliquez sur \"Lancer la Lecture Paranoïaque\" pour voir le résultat.",
     analyzeFirst: "Veuillez d'abord analyser un texte dans l'onglet \"Entrée & Analyse\".",
+    copyButton: "Copier le Résultat",
+    copiedToClipboard: "Résultat copié dans le presse-papiers !",
+    failedToCopy: "Échec de la copie du résultat.",
   },
   en: {
     title: "Paranoid Reading (Gemini AI)",
@@ -33,6 +38,9 @@ const panelLabels: Record<string, Record<string, string>> = {
     resultsTitle: "Hidden Narratives Detected:",
     clickToSeeResults: "Click \"Start Paranoid Reading\" to see the result.",
     analyzeFirst: "Please analyze a text in the \"Input & Research\" tab first.",
+    copyButton: "Copy Result",
+    copiedToClipboard: "Result copied to clipboard!",
+    failedToCopy: "Failed to copy result.",
   }
 };
 
@@ -44,6 +52,19 @@ export function ParanoidReadingPanel({
   currentLanguage 
 }: ParanoidReadingPanelProps) {
   const labels = panelLabels[currentLanguage] || panelLabels.fr;
+  const { toast } = useToast();
+
+  const handleCopyToClipboard = async (textToCopy: string | undefined) => {
+    if (!textToCopy) return;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      toast({ title: labels.copiedToClipboard });
+    } catch (err) {
+      toast({ title: labels.failedToCopy, variant: "destructive" });
+      console.error('Failed to copy: ', err);
+    }
+  };
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -75,10 +96,23 @@ export function ParanoidReadingPanel({
 
         {paranoidReadingResult && !isLoading && (
           <div className="space-y-2 pt-4 animate-fadeIn">
-            <h3 className="text-xl font-semibold font-headline">{labels.resultsTitle}</h3>
-            <p className="text-foreground/90 leading-relaxed bg-secondary/30 p-4 rounded-md shadow-inner whitespace-pre-wrap">
-              {paranoidReadingResult.hiddenNarratives}
-            </p>
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-semibold font-headline">{labels.resultsTitle}</h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => handleCopyToClipboard(paranoidReadingResult?.hiddenNarratives)}
+                disabled={!paranoidReadingResult?.hiddenNarratives}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                {labels.copyButton}
+              </Button>
+            </div>
+            <ScrollArea className="h-auto max-h-[500px] pr-3 border rounded-md bg-muted/20 shadow-inner">
+                <p className="text-foreground/90 leading-relaxed p-4 whitespace-pre-wrap text-sm">
+                {paranoidReadingResult.hiddenNarratives}
+                </p>
+            </ScrollArea>
           </div>
         )}
         {!paranoidReadingResult && !isLoading && isBaseTextAvailable && (

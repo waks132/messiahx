@@ -2,7 +2,7 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb, Info, Download } from "lucide-react";
+import { BookText, ShieldAlert, Eye, SearchCheck, Lightbulb, Info, Download, Copy } from "lucide-react";
 import { CognitiveMapChart } from "@/components/charts/cognitive-map-chart";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { AnalyzeTextOutput } from "@/ai/flows/analyze-text-for-manipulation";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { downloadJson } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface CognitiveAnalysisPanelProps {
   analysisResults: AnalyzeTextOutput | null;
@@ -23,6 +24,7 @@ const panelLabels: Record<string, Record<string, string>> = {
     title: "Analyse Initiale du Discours",
     description: "Résumé et éléments discursifs identifiés par l'IA de manière neutre. L'intention et l'intensité manipulative seront évaluées dans l'onglet \"Classification\".",
     downloadButton: "Télécharger l'Analyse",
+    copySummaryButton: "Copier le Résumé",
     summaryTitle: "Résumé des Éléments Discursifs :",
     noSummary: "Aucun résumé disponible.",
     rhetoricalTechniques: "Techniques Rhétoriques",
@@ -35,11 +37,16 @@ const panelLabels: Record<string, Record<string, string>> = {
     loadingText: "Analyse initiale en cours...",
     resultsAppearHere: "Les résultats de l'analyse initiale du discours apparaîtront ici une fois le texte soumis et analysé.",
     noResultsToShow: "Aucun résultat à afficher pour l'analyse initiale. Veuillez soumettre un texte.",
+    copiedToClipboard: "Copié dans le presse-papiers !",
+    failedToCopy: "Échec de la copie.",
+    factStatement: "Affirmation",
+    factJustification: "Justification Invérifiabilité",
   },
   en: {
     title: "Initial Discourse Analysis",
     description: "Summary and discursive elements identified by the AI neutrally. Manipulative intent and intensity will be assessed in the \"Classification\" tab.",
     downloadButton: "Download Analysis",
+    copySummaryButton: "Copy Summary",
     summaryTitle: "Summary of Discursive Elements:",
     noSummary: "No summary available.",
     rhetoricalTechniques: "Rhetorical Techniques",
@@ -52,11 +59,24 @@ const panelLabels: Record<string, Record<string, string>> = {
     loadingText: "Initial analysis in progress...",
     resultsAppearHere: "The results of the initial discourse analysis will appear here once the text is submitted and analyzed.",
     noResultsToShow: "No results to display for initial analysis. Please submit a text.",
+    copiedToClipboard: "Copied to clipboard!",
+    failedToCopy: "Failed to copy.",
+    factStatement: "Statement",
+    factJustification: "Unverifiability Justification",
   }
 };
 
-const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassName, tooltipText, currentLanguage }: { title: string; items: string[]; icon: React.ReactNode; badgeVariant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info", badgeClassName?: string, tooltipText?: string, currentLanguage: string }) => {
+const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassName, tooltipText, currentLanguage, isUnverifiableFact = false }: { title: string; items: string[]; icon: React.ReactNode; badgeVariant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info", badgeClassName?: string, tooltipText?: string, currentLanguage: string, isUnverifiableFact?: boolean }) => {
   const labels = panelLabels[currentLanguage] || panelLabels.fr;
+
+  const parseFact = (item: string) => {
+    const parts = item.split(' - ');
+    if (parts.length >= 2) {
+      return { statement: parts[0], justification: parts.slice(1).join(' - ') };
+    }
+    return { statement: item, justification: "" };
+  };
+
   return (
     <Card className="flex-1 min-w-[280px] animate-fadeIn transition-shadow duration-300 hover:shadow-lg bg-card/90 backdrop-blur-sm border border-border/70">
       <CardHeader>
@@ -81,23 +101,47 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
         {items && items.length > 0 ? (
           <ScrollArea className="h-40 pr-3">
             <ul className="space-y-2">
-              {items.map((item, index) => (
-                <li key={index} className="text-sm">
-                  <TooltipProvider>
-                    <Tooltip delayDuration={100}>
-                      <TooltipTrigger asChild>
-                        <Badge variant={badgeVariant} className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow ${badgeClassName}`}>
-                          {item}
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
-                        <p className="font-semibold">{title.slice(0, -1)}:</p>
-                        <p>{item}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </li>
-              ))}
+              {items.map((item, index) => {
+                if (isUnverifiableFact) {
+                  const { statement, justification } = parseFact(item);
+                  return (
+                    <li key={index} className="text-sm">
+                       <TooltipProvider>
+                        <Tooltip delayDuration={100}>
+                          <TooltipTrigger asChild>
+                            <div className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow rounded-md ${badgeClassName}`}>
+                              <p><strong className="font-semibold">{labels.factStatement}:</strong> {statement}</p>
+                              {justification && <p className="text-xs italic text-muted-foreground mt-1"><strong className="font-medium">{labels.factJustification}:</strong> {justification}</p>}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-md bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
+                            <p className="font-semibold">{title.slice(0,-1)}:</p>
+                            <p><strong className="font-semibold">{labels.factStatement}:</strong> {statement}</p>
+                            {justification && <p className="text-xs italic mt-1"><strong className="font-medium">{labels.factJustification}:</strong> {justification}</p>}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </li>
+                  );
+                }
+                return (
+                  <li key={index} className="text-sm">
+                    <TooltipProvider>
+                      <Tooltip delayDuration={100}>
+                        <TooltipTrigger asChild>
+                          <Badge variant={badgeVariant} className={`cursor-default text-left whitespace-normal py-1.5 px-2.5 text-xs shadow-md hover:shadow-lg transition-shadow ${badgeClassName}`}>
+                            {item}
+                          </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs bg-popover text-popover-foreground p-2 rounded-md shadow-xl">
+                          <p className="font-semibold">{title.slice(0, -1)}:</p>
+                          <p>{item}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </li>
+                );
+              })}
             </ul>
           </ScrollArea>
         ) : (
@@ -110,6 +154,7 @@ const ItemList = ({ title, items, icon, badgeVariant = "secondary", badgeClassNa
 
 export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLanguage }: CognitiveAnalysisPanelProps) {
   const labels = panelLabels[currentLanguage] || panelLabels.fr;
+  const { toast } = useToast();
 
   const handleDownloadAnalysis = () => {
     if (analysisResults) {
@@ -117,6 +162,18 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
       downloadJson(analysisResults, filename);
     }
   };
+
+  const handleCopyToClipboard = async (textToCopy: string | undefined) => {
+    if (!textToCopy) return;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      toast({ title: labels.copiedToClipboard });
+    } catch (err) {
+      toast({ title: labels.failedToCopy, variant: "destructive" });
+      console.error('Failed to copy: ', err);
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -193,10 +250,16 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
             </CardTitle>
             <CardDescription>{labels.description}</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={handleDownloadAnalysis} disabled={!analysisResults}>
-            <Download className="mr-2 h-4 w-4" />
-            {labels.downloadButton}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(analysisResults?.summary)} disabled={!analysisResults?.summary}>
+              <Copy className="mr-2 h-4 w-4" />
+              {labels.copySummaryButton}
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleDownloadAnalysis} disabled={!analysisResults}>
+              <Download className="mr-2 h-4 w-4" />
+              {labels.downloadButton}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <h3 className="text-lg font-semibold font-headline text-accent flex items-center gap-2">
@@ -235,9 +298,10 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
           items={analysisResults.unverifiableFacts || []}
           icon={<ShieldAlert className="h-5 w-5" />}
           badgeVariant="destructive"
-           badgeClassName="bg-gradient-to-br from-red-500 to-orange-400 text-white"
-           tooltipText={labels.unverifiableTooltip}
-           currentLanguage={currentLanguage}
+          badgeClassName="bg-gradient-to-br from-red-500 to-orange-400 text-white"
+          tooltipText={labels.unverifiableTooltip}
+          currentLanguage={currentLanguage}
+          isUnverifiableFact={true}
         />
       </div>
       

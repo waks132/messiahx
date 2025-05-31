@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { 
   analyzeTextAction, 
   generateCriticalSummaryAction, 
@@ -23,17 +24,18 @@ import {
   researchContextualAction,
   researchManipulationAction
 } from "@/app/actions";
-import type { AnalyzeTextOutput, AnalyzeTextInput } from '@/ai/flows/analyze-text-for-manipulation';
-import type { GenerateCriticalSummaryOutput, GenerateCriticalSummaryInput } from '@/ai/flows/generate-critical-summary';
-import type { DetectHiddenNarrativesOutput, DetectHiddenNarrativesInput } from '@/ai/flows/detect-hidden-narratives';
+import type { AnalyzeTextOutput } from '@/ai/flows/analyze-text-for-manipulation';
+import type { GenerateCriticalSummaryOutput } from '@/ai/flows/generate-critical-summary';
+import type { DetectHiddenNarrativesOutput } from '@/ai/flows/detect-hidden-narratives';
 import type { ClassifyCognitiveCategoriesInput, ClassifyCognitiveCategoriesOutput } from '@/ai/flows/classify-cognitive-categories';
 import type { ReformulateTextInput, ReformulateTextOutput } from '@/ai/flows/reformulate-text';
 import type { ResearchContextualInput, ResearchContextualOutput } from '@/ai/flows/research-contextual-flow';
 import type { ResearchManipulationInput, ResearchManipulationOutput } from '@/ai/flows/research-manipulation-flow';
+import type { WebSearchOutput } from '@/ai/tools/web-search-tool';
 
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Quote, Drama, BrainCircuit, SearchCheck, PenTool, Settings, Telescope, MessageSquareText, Languages } from 'lucide-react';
+import { FileText, Quote, Drama, BrainCircuit, SearchCheck, PenTool, Settings, Telescope, MessageSquareText, Languages, Copy, AlertCircle, CheckCircle2, HelpCircle } from 'lucide-react';
 
 const initialAnalysisResults: AnalyzeTextOutput = {
   summary: "",
@@ -96,6 +98,15 @@ interface UILabels {
   emptyReformulationInput: string;
   emptyResearchInput: string;
   searchInProgress: string;
+  copiedToClipboard: string;
+  failedToCopy: string;
+  webSearchStatus: string;
+  webSearchStatusSuccess: string;
+  webSearchStatusKeyMissing: string;
+  webSearchStatusError: string;
+  webSearchStatusPlaceholder: string;
+  copyButton: string;
+  noResult: string;
 }
 
 const uiContent: Record<string, UILabels> = {
@@ -133,6 +144,15 @@ const uiContent: Record<string, UILabels> = {
     emptyReformulationInput: "Le champ de texte pour la reformulation est vide.",
     emptyResearchInput: "Le champ de recherche est vide.",
     searchInProgress: "Recherche en cours...",
+    copiedToClipboard: "Copié dans le presse-papiers !",
+    failedToCopy: "Échec de la copie.",
+    webSearchStatus: "Statut Recherche Web:",
+    webSearchStatusSuccess: "Perplexity API (OK)",
+    webSearchStatusKeyMissing: "Perplexity API (Clé manquante, Placeholder actif)",
+    webSearchStatusError: "Perplexity API (Erreur)",
+    webSearchStatusPlaceholder: "Recherche Web (Placeholder)",
+    copyButton: "Copier",
+    noResult: "Aucun résultat.",
   },
   en: {
     inputTab: "Input & Research",
@@ -168,7 +188,49 @@ const uiContent: Record<string, UILabels> = {
     emptyReformulationInput: "The reformulation text field is empty.",
     emptyResearchInput: "The research query field is empty.",
     searchInProgress: "Search in progress...",
+    copiedToClipboard: "Copied to clipboard!",
+    failedToCopy: "Failed to copy.",
+    webSearchStatus: "Web Search Status:",
+    webSearchStatusSuccess: "Perplexity API (OK)",
+    webSearchStatusKeyMissing: "Perplexity API (Key missing, Placeholder active)",
+    webSearchStatusError: "Perplexity API (Error)",
+    webSearchStatusPlaceholder: "Web Search (Placeholder)",
+    copyButton: "Copy",
+    noResult: "No result.",
   },
+};
+
+const WebSearchStatusDisplay = ({ status, labels }: { status: WebSearchOutput['source'] | null, labels: UILabels }) => {
+  if (!status) return null;
+
+  let IconComponent = HelpCircle;
+  let text = labels.webSearchStatusPlaceholder;
+  let colorClass = "text-muted-foreground";
+
+  switch (status) {
+    case "PerplexityAPI_Success":
+      IconComponent = CheckCircle2;
+      text = labels.webSearchStatusSuccess;
+      colorClass = "text-green-500";
+      break;
+    case "PerplexityAPI_KeyMissing":
+      IconComponent = AlertCircle;
+      text = labels.webSearchStatusKeyMissing;
+      colorClass = "text-orange-500";
+      break;
+    case "PerplexityAPI_Error":
+      IconComponent = AlertCircle;
+      text = labels.webSearchStatusError;
+      colorClass = "text-destructive";
+      break;
+  }
+
+  return (
+    <div className={`flex items-center gap-2 text-xs mt-2 ${colorClass}`}>
+      <IconComponent className="h-4 w-4" />
+      <span>{labels.webSearchStatus} {text}</span>
+    </div>
+  );
 };
 
 
@@ -190,6 +252,8 @@ export default function CognitiveMapperClient() {
 
   const [contextualSearchResult, setContextualSearchResult] = useState<ResearchContextualOutput | null>(null);
   const [manipulationSearchResult, setManipulationSearchResult] = useState<ResearchManipulationOutput | null>(null);
+  const [webSearchApiStatus, setWebSearchApiStatus] = useState<WebSearchOutput['source'] | null>(null);
+
 
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState<boolean>(false);
@@ -204,19 +268,27 @@ export default function CognitiveMapperClient() {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Initialize selectedReformulationStyle based on the first available style
-    if (reformulationStyles.length > 0) {
-      setSelectedReformulationStyle(reformulationStyles[0].value);
+    if (reformulationStyles.length > 0 && !selectedReformulationStyle) {
+        setSelectedReformulationStyle(reformulationStyles[0].value);
     }
-  }, []); 
+  }, [selectedReformulationStyle]); 
 
   useEffect(() => {
-    // If main input text changes and reformulation input is empty or was identical, update it.
-    // This allows initial population but preserves manual edits in reformulation tab.
     if (inputText.trim() !== "" && (reformulationInputText.trim() === "" || reformulationInputText === inputText)) {
         setReformulationInputText(inputText);
     }
-  }, [inputText]); 
+  }, [inputText, reformulationInputText]); 
+
+  const handleCopyToClipboard = async (textToCopy: string | undefined) => {
+    if (!textToCopy) return;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      toast({ title: labels.copiedToClipboard });
+    } catch (err) {
+      toast({ title: labels.failedToCopy, variant: "destructive" });
+      console.error('Failed to copy: ', err);
+    }
+  };
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
@@ -361,9 +433,13 @@ export default function CognitiveMapperClient() {
     }
     setIsSearchingContextual(true);
     setContextualSearchResult(null);
+    setWebSearchApiStatus(null);
     try {
       const result = await researchContextualAction({ text: researchQueryText, language: currentLanguage }); 
       setContextualSearchResult(result);
+      // @ts-ignore - Assuming result can have a source property if tool is used.
+      if (result.source) setWebSearchApiStatus(result.source as WebSearchOutput['source']);
+
       if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error:") || result.researchResult.startsWith("The model did not provide") || result.researchResult.startsWith("Échec")) {
         toast({ title: labels.contextualSearchError, description: result.researchResult, variant: "destructive", duration: 8000 });
       } else {
@@ -384,9 +460,12 @@ export default function CognitiveMapperClient() {
     }
     setIsSearchingManipulation(true);
     setManipulationSearchResult(null);
+    setWebSearchApiStatus(null);
     try {
       const result = await researchManipulationAction({ text: researchQueryText, language: currentLanguage }); 
       setManipulationSearchResult(result);
+      // @ts-ignore
+      if (result.source) setWebSearchApiStatus(result.source as WebSearchOutput['source']);
        if (result.manipulationInsights.startsWith("Failed") || result.manipulationInsights.startsWith("Error:") || result.manipulationInsights.startsWith("The model did not provide") || result.manipulationInsights.startsWith("Échec")) {
         toast({ title: labels.manipulationSearchError, description: result.manipulationInsights, variant: "destructive", duration: 8000 });
       } else {
@@ -403,7 +482,6 @@ export default function CognitiveMapperClient() {
   const isMainAnalysisTextAvailable = !!inputText.trim();
   const isAnalysisDone = !!analysisResults && !analysisResults.summary.startsWith("Failed") && !analysisResults.summary.startsWith("Échec");
   const isReformulationTextAvailable = !!reformulationInputText.trim();
-  const isResearchQueryTextAvailable = !!researchQueryText.trim();
 
 
   return (
@@ -464,19 +542,23 @@ export default function CognitiveMapperClient() {
             isSearchingManipulation={isSearchingManipulation}
             currentLanguage={currentLanguage}
           />
+           <WebSearchStatusDisplay status={webSearchApiStatus} labels={labels} />
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             {contextualSearchResult && (
               <Card className="animate-fadeIn">
-                <CardHeader>
+                <CardHeader className="flex flex-row justify-between items-center">
                   <CardTitle className="flex items-center gap-2 font-headline text-xl text-primary">
                     <Telescope className="h-5 w-5" />
                     {labels.contextualSearchTitle}
                   </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(contextualSearchResult?.researchResult)} disabled={!contextualSearchResult?.researchResult}>
+                    <Copy className="mr-2 h-4 w-4" /> {labels.copyButton}
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <ScrollArea className="h-96 pr-3 border rounded-md bg-muted/20 shadow-inner">
                     <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed p-4">
-                      {contextualSearchResult.researchResult || (currentLanguage === 'fr' ? "Aucun résultat." : "No result.")}
+                      {contextualSearchResult.researchResult || (currentLanguage === 'fr' ? labels.noResult : labels.noResult)}
                     </p>
                   </ScrollArea>
                 </CardContent>
@@ -484,16 +566,19 @@ export default function CognitiveMapperClient() {
             )}
             {manipulationSearchResult && (
               <Card className="animate-fadeIn">
-                <CardHeader>
+                <CardHeader className="flex flex-row justify-between items-center">
                   <CardTitle className="flex items-center gap-2 font-headline text-xl text-primary">
                      <MessageSquareText className="h-5 w-5" />
                     {labels.manipulationSearchTitle}
                   </CardTitle>
+                   <Button variant="outline" size="sm" onClick={() => handleCopyToClipboard(manipulationSearchResult?.manipulationInsights)} disabled={!manipulationSearchResult?.manipulationInsights}>
+                    <Copy className="mr-2 h-4 w-4" /> {labels.copyButton}
+                  </Button>
                 </CardHeader>
                 <CardContent>
                    <ScrollArea className="h-96 pr-3 border rounded-md bg-muted/20 shadow-inner">
                     <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed p-4">
-                      {manipulationSearchResult.manipulationInsights || (currentLanguage === 'fr' ? "Aucun résultat." : "No result.")}
+                      {manipulationSearchResult.manipulationInsights || (currentLanguage === 'fr' ? labels.noResult : labels.noResult)}
                     </p>
                   </ScrollArea>
                 </CardContent>
