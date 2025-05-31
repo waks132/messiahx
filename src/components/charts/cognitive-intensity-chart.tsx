@@ -36,7 +36,7 @@ export function CognitiveIntensityChart({ classificationResult }: CognitiveInten
   }));
 
   return (
-    <Card className="shadow-md col-span-1 md:col-span-2 animate-fadeIn mt-6">
+    <Card className="shadow-md animate-fadeIn mt-6"> {/* Removed col-span */}
       <CardHeader>
         <CardTitle className="font-headline text-xl flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />
@@ -85,3 +85,5 @@ export function CognitiveIntensityChart({ classificationResult }: CognitiveInten
   );
 }
 
+
+    

@@ -11,6 +11,7 @@ import type { AnalyzeTextOutput } from "@/ai/flows/analyze-text-for-manipulation
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { downloadJson } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { CognitiveIntensityChart } from "@/components/charts/cognitive-intensity-chart"; // Import for classification panel chart
 
 interface CognitiveAnalysisPanelProps {
   analysisResults: AnalyzeTextOutput | null;
@@ -77,7 +78,7 @@ const ItemList = ({ title, items, icon, itemClassName, tooltipText, currentLangu
   };
 
   return (
-    <Card className="flex-1 min-w-[280px] animate-fadeIn transition-shadow duration-300 hover:shadow-lg bg-card/90 backdrop-blur-sm border border-border/70">
+    <Card className="flex-1 min-w-[280px] animate-fadeIn transition-shadow duration-300 hover:shadow-lg bg-card/90 backdrop-blur-sm border border-border/70 h-full flex flex-col">
       <CardHeader>
         <CardTitle className="text-lg font-headline flex items-center gap-2 text-primary">
           {icon}
@@ -96,7 +97,7 @@ const ItemList = ({ title, items, icon, itemClassName, tooltipText, currentLangu
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-grow">
         {items && items.length > 0 ? (
           <ScrollArea className="h-60 pr-3"> {/* Increased height */}
             <ul className="space-y-2.5"> {/* Increased spacing */}
@@ -265,7 +266,7 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
             <Lightbulb className="h-5 w-5" />
             {labels.summaryTitle}
           </h3>
-          <ScrollArea className="h-auto max-h-72 pr-3"> {/* Increased max-height */}
+          <ScrollArea className="h-auto max-h-72 pr-3">
             <p className="text-foreground/90 leading-relaxed bg-muted/20 p-4 rounded-md shadow-inner text-sm whitespace-pre-wrap">
               {analysisResults.summary || labels.noSummary}
             </p>
@@ -273,39 +274,43 @@ export function CognitiveAnalysisPanel({ analysisResults, isLoading, currentLang
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> {/* Changed from lg:grid-cols-3 */}
-        <ItemList 
-          title={labels.rhetoricalTechniques}
-          items={analysisResults.rhetoricalTechniques || []}
-          icon={<BookText className="h-5 w-5" />}
-          itemClassName="border-sky-500/50"
-          tooltipText={labels.rhetoricalTooltip}
-          currentLanguage={currentLanguage}
-        />
-        <ItemList 
-          title={labels.cognitiveBiases} 
-          items={analysisResults.cognitiveBiases || []}
-          icon={<Eye className="h-5 w-5" />}
-          itemClassName="border-yellow-500/50"
-          tooltipText={labels.cognitiveTooltip}
-          currentLanguage={currentLanguage}
-        />
-        <ItemList 
-          title={labels.unverifiableFacts}
-          items={analysisResults.unverifiableFacts || []}
-          icon={<ShieldAlert className="h-5 w-5" />}
-          itemClassName="border-red-500/50"
-          tooltipText={labels.unverifiableTooltip}
-          currentLanguage={currentLanguage}
-          isUnverifiableFact={true}
-        />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start"> {/* Use items-start for alignment */}
+        <div className="space-y-6 md:col-span-1">
+          <ItemList 
+            title={labels.rhetoricalTechniques}
+            items={analysisResults.rhetoricalTechniques || []}
+            icon={<BookText className="h-5 w-5" />}
+            itemClassName="border-sky-500/50"
+            tooltipText={labels.rhetoricalTooltip}
+            currentLanguage={currentLanguage}
+          />
+          <ItemList 
+            title={labels.unverifiableFacts}
+            items={analysisResults.unverifiableFacts || []}
+            icon={<ShieldAlert className="h-5 w-5" />}
+            itemClassName="border-red-500/50"
+            tooltipText={labels.unverifiableTooltip}
+            currentLanguage={currentLanguage}
+            isUnverifiableFact={true}
+          />
+        </div>
+        <div className="space-y-6 md:col-span-1">
+          <ItemList 
+            title={labels.cognitiveBiases} 
+            items={analysisResults.cognitiveBiases || []}
+            icon={<Eye className="h-5 w-5" />}
+            itemClassName="border-yellow-500/50"
+            tooltipText={labels.cognitiveTooltip}
+            currentLanguage={currentLanguage}
+          />
+           <CognitiveMapChart analysisResults={analysisResults} currentLanguage={currentLanguage} />
+        </div>
       </div>
-      
-      <CognitiveMapChart analysisResults={analysisResults} currentLanguage={currentLanguage} />
-      
     </div>
   );
 }
+    
+
     
 
     
