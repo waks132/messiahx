@@ -45,6 +45,7 @@ const prompt = ai.definePrompt({
 
   Analyzed Text: {{{analyzedText}}}
 
+  IMPORTANT: Your summary should be as long, detailed, comprehensive, and substantial as possible, exploring all facets of the request. Do not summarize or truncate your thoughts prematurely. Aim for maximum token utilization to provide the deepest possible analysis.
   Please ensure your summary is thorough, well-explained, substantial, and detailed, providing significant insights.
   `,
 });
@@ -61,3 +62,4 @@ const generateCriticalSummaryFlow = ai.defineFlow(
   }
 );
 
+    

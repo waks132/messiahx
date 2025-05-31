@@ -85,7 +85,8 @@ const classifyCognitiveCategoriesPrompt = ai.definePrompt({
   Base your classification and intensity scores on the prevalence and impact of the identified elements within the original text, critically considering the overall context type you determined.
   Ensure your output strictly adheres to the defined JSON schema for classifiedCategories and overallClassification.
   The 'classifiedCategories' array MUST prominently feature entries for Emotional, Authority, Logical Fallacy, Social Pressure, and Information Bias, each with a context-aware and detailed description.
-  Please provide a thorough, detailed, and well-explained response for all fields, ensuring substantial content.
+  
+  IMPORTANT: Your response for all fields (overall classification, classified categories, descriptions) should be as long, detailed, comprehensive, and substantial as possible, exploring all facets of the request. Do not summarize or truncate your thoughts prematurely. Aim for maximum token utilization to provide the deepest possible analysis.
   `,
 });
 
@@ -115,3 +116,4 @@ const classifyCognitiveCategoriesFlow = ai.defineFlow(
   }
 );
 
+    

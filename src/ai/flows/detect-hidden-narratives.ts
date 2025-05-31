@@ -40,7 +40,9 @@ const detectHiddenNarrativesPrompt = ai.definePrompt({
 
   Analyze the text from a perspective that assumes there are hidden meanings, agendas, and potential manipulations at play. Identify any underlying narratives or intentions that are not explicitly stated but may be implied through the language used, the context provided, or the subtext detectable through careful scrutiny.
 
-  Present your findings as a detailed, comprehensive, and substantial report of the detected hidden narratives. Ensure your report is thorough, well-explained, and provides significant depth.
+  Present your findings as a detailed, comprehensive, and substantial report of the detected hidden narratives. 
+  IMPORTANT: Your response should be as long, detailed, comprehensive, and substantial as possible, exploring all facets of the request. Do not summarize or truncate your thoughts prematurely. Aim for maximum token utilization to provide the deepest possible analysis.
+  Ensure your report is thorough, well-explained, and provides significant depth.
   `,
 });
 
@@ -56,3 +58,4 @@ const detectHiddenNarrativesFlow = ai.defineFlow(
   }
 );
 
+    
