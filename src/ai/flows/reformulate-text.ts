@@ -117,12 +117,10 @@ const reformulateTextFlow = ai.defineFlow(
 
     try {
       const {text: reformulatedTextResult} = await ai.generate({
-        prompt: [ 
-          { role: 'system', content: [{ text: systemPromptContent }] }, // System message as first element
-          { role: 'user', content: [{ text: userPromptContent }] },   // User message as second element
-        ],
-        output: { format: 'text' },
-        config: { temperature: 0.7 }
+        prompt: [{text: userPromptContent}], // User prompt as Part[]
+        systemInstruction: [{text: systemPromptContent}], // System instruction as Part[]
+        output: {format: 'text'},
+        config: {temperature: 0.7}
       });
       
       const reformulatedText = reformulatedTextResult;
