@@ -51,7 +51,7 @@ const initialClassificationResult: ClassifyCognitiveCategoriesOutput = {
 
 export default function CognitiveMapperClient() {
   const [inputText, setInputText] = useState<string>("");
-  const [researchQueryText, setResearchQueryText] = useState<string>(""); // State for the dedicated research input
+  const [researchQueryText, setResearchQueryText] = useState<string>(""); 
   
   const [analysisResults, setAnalysisResults] = useState<AnalyzeTextOutput>(initialAnalysisResults);
   const [criticalSummaryResult, setCriticalSummaryResult] = useState<GenerateCriticalSummaryOutput | null>(null);
@@ -78,14 +78,14 @@ export default function CognitiveMapperClient() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (inputText && !reformulationInputText) {
+    // Prime reformulation input only if it's empty and main input text is available.
+    // This prevents overwriting user's specific text in reformulation tab.
+    if (inputText && reformulationInputText.trim() === "") {
       setReformulationInputText(inputText);
     }
-     if (inputText && !researchQueryText) {
-      // Optionally prime research query with main input, or keep it separate
-      // setResearchQueryText(inputText); 
-    }
-  }, [inputText, reformulationInputText, researchQueryText]);
+    // Research query is independent and should not be auto-filled from main input here
+    // to avoid confusion and ensure user explicitly enters research terms.
+  }, [inputText]); // Only depend on inputText for this specific priming logic
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
@@ -97,10 +97,16 @@ export default function CognitiveMapperClient() {
     setCriticalSummaryResult(null); 
     setParanoidReadingResult(null);
     setClassificationResult(initialClassificationResult); 
-    if (!reformulationInputText.trim()) setReformulationInputText(inputText); 
-    setReformulationResult(null); 
-    setContextualSearchResult(null);
-    setManipulationSearchResult(null);
+    
+    // Do not automatically clear reformulation input or other search results here
+    // setReformulationResult(null); 
+    // setContextualSearchResult(null);
+    // setManipulationSearchResult(null);
+    // Prime reformulation input if it's currently empty
+    if (reformulationInputText.trim() === "" && inputText.trim() !== "") {
+      setReformulationInputText(inputText);
+    }
+
 
     try {
       const results = await analyzeTextAction({ text: inputText });
@@ -196,15 +202,15 @@ export default function CognitiveMapperClient() {
     }
   };
 
-  const handleReformulate = async (input: ReformulateTextInput) => {
-    if (!input.text.trim()) {
+  const handleReformulate = async () => { // Takes no argument, uses state
+    if (!reformulationInputText.trim()) {
       toast({ title: "Erreur", description: "Le champ de texte pour la reformulation est vide.", variant: "destructive" });
       return;
     }
     setIsReformulating(true);
     setReformulationResult(null);
     try {
-      const result = await reformulateTextAction(input);
+      const result = await reformulateTextAction({ text: reformulationInputText, style: selectedReformulationStyle });
       setReformulationResult(result);
       if (result.reformulatedText.startsWith("Failed to reformulate") || result.reformulatedText.startsWith("Error:") || result.reformulatedText.startsWith("The model did not provide")) {
         toast({ title: "Erreur de Reformulation", description: result.reformulatedText, variant: "destructive", duration: 8000 });
@@ -213,26 +219,26 @@ export default function CognitiveMapperClient() {
       }
     } catch (error: any) {
       toast({ title: "Erreur de Reformulation", description: error.message || "Une erreur inattendue est survenue.", variant: "destructive", duration: 8000 });
-      setReformulationResult({ reformulatedText: `Échec de la reformulation : ${error.message || "Erreur inconnue"}`, styleUsed: input.style });
+      setReformulationResult({ reformulatedText: `Échec de la reformulation : ${error.message || "Erreur inconnue"}`, styleUsed: selectedReformulationStyle });
     } finally {
       setIsReformulating(false);
     }
   };
 
   const handleContextualSearch = async () => {
-    if (!researchQueryText.trim()) { // Use researchQueryText here
+    if (!researchQueryText.trim()) { 
       toast({ title: "Erreur", description: "Le champ de recherche contextuelle est vide.", variant: "destructive" });
       return;
     }
     setIsSearchingContextual(true);
     setContextualSearchResult(null);
     try {
-      const result = await researchContextualAction({ text: researchQueryText }); // Use researchQueryText here
+      const result = await researchContextualAction({ text: researchQueryText }); 
       setContextualSearchResult(result);
-      if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error") || result.researchResult.startsWith("Veuillez me fournir le texte")) {
+      if (result.researchResult.startsWith("Failed") || result.researchResult.startsWith("Error:") || result.researchResult.startsWith("The model did not provide")) {
         toast({ title: "Erreur de Recherche Contextuelle", description: result.researchResult, variant: "destructive", duration: 8000 });
       } else {
-        toast({ title: "Recherche Contextuelle Terminée", description: `Résultat disponible.`, duration: 5000 });
+        toast({ title: "Recherche Contextuelle Terminée", description: `Résultat disponible. Voir ci-dessous.`, duration: 5000 });
       }
     } catch (error: any) {
       toast({ title: "Erreur de Recherche Contextuelle", description: error.message || "Une erreur inattendue.", variant: "destructive", duration: 8000 });
@@ -243,19 +249,19 @@ export default function CognitiveMapperClient() {
   };
 
   const handleManipulationSearch = async () => {
-    if (!researchQueryText.trim()) { // Use researchQueryText here
+    if (!researchQueryText.trim()) { 
       toast({ title: "Erreur", description: "Le champ d'analyse de manipulation est vide.", variant: "destructive" });
       return;
     }
     setIsSearchingManipulation(true);
     setManipulationSearchResult(null);
     try {
-      const result = await researchManipulationAction({ text: researchQueryText }); // Use researchQueryText here
+      const result = await researchManipulationAction({ text: researchQueryText }); 
       setManipulationSearchResult(result);
-       if (result.manipulationInsights.startsWith("Failed") || result.manipulationInsights.startsWith("Error")) {
+       if (result.manipulationInsights.startsWith("Failed") || result.manipulationInsights.startsWith("Error:") || result.manipulationInsights.startsWith("The model did not provide")) {
         toast({ title: "Erreur Analyse Manipulation", description: result.manipulationInsights, variant: "destructive", duration: 8000 });
       } else {
-        toast({ title: "Analyse de Manipulation Terminée", description: `Résultat disponible.`, duration: 5000 });
+        toast({ title: "Analyse de Manipulation Terminée", description: `Résultat disponible. Voir ci-dessous.`, duration: 5000 });
       }
     } catch (error: any) {
       toast({ title: "Erreur Analyse Manipulation", description: error.message || "Une erreur inattendue.", variant: "destructive", duration: 8000 });
@@ -312,7 +318,7 @@ export default function CognitiveMapperClient() {
             handleManipulationSearch={handleManipulationSearch}
             isSearchingManipulation={isSearchingManipulation}
           />
-          <div className="mt-6 space-y-4">
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             {contextualSearchResult && (
               <Card className="animate-fadeIn">
                 <CardHeader>
@@ -322,7 +328,7 @@ export default function CognitiveMapperClient() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-auto max-h-60 pr-2">
+                  <ScrollArea className="h-auto max-h-80 pr-2">
                     <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed bg-muted/30 p-3 rounded-md shadow-inner">
                       {contextualSearchResult.researchResult || "Aucun résultat."}
                     </p>
@@ -339,7 +345,7 @@ export default function CognitiveMapperClient() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                   <ScrollArea className="h-auto max-h-60 pr-2">
+                   <ScrollArea className="h-auto max-h-80 pr-2">
                     <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed bg-muted/30 p-3 rounded-md shadow-inner">
                       {manipulationSearchResult.manipulationInsights || "Aucun résultat."}
                     </p>
@@ -348,6 +354,11 @@ export default function CognitiveMapperClient() {
               </Card>
             )}
           </div>
+           { (isSearchingContextual || isSearchingManipulation) && (!contextualSearchResult && !manipulationSearchResult) && (
+             <div className="mt-6 text-center text-muted-foreground">
+                Recherche en cours...
+             </div>
+           )}
         </TabsContent>
         <TabsContent value="analysis">
           <CognitiveAnalysisPanel analysisResults={analysisResults} isLoading={isAnalyzing} />
@@ -375,7 +386,6 @@ export default function CognitiveMapperClient() {
             selectedReformulationStyle={selectedReformulationStyle}
             setSelectedReformulationStyle={setSelectedReformulationStyle}
             reformulationResult={reformulationResult}
-            setReformulationResult={setReformulationResult}
             isReformulating={isReformulating}
             handleReformulate={handleReformulate} 
           />
