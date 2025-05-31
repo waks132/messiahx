@@ -11,18 +11,18 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { AnalyzeTextOutput } from './analyze-text-for-manipulation'; // Assuming AnalyzeTextOutput is in the same dir or adjust path
+import type { AnalyzeTextOutput } from './analyze-text-for-manipulation';
 
 const ClassifiedCategorySchema = z.object({
-  categoryName: z.string().describe('The name of the cognitive category detected (e.g., authority fallacy, appeal to fear, confirmation bias).'),
+  categoryName: z.string().describe('The name of the cognitive category detected (e.g., Emotional, Authority, Logical Fallacy, Social Pressure, Information Bias, or other relevant fallacy/bias/rhetorical device).'),
   intensity: z.number().min(0).max(10).describe('The intensity of this category in the text on a scale of 0 (not present/very weak) to 10 (very strong/dominant).'),
-  description: z.string().describe('A brief explanation (1-2 sentences) of why this category was identified and its manifestation in the provided text elements.'),
+  description: z.string().describe('A brief explanation (1-2 sentences) of why this category was identified, its manifestation in the text, and how the overall text context influenced its perceived intensity.'),
 });
 
 const ContentTypeClassificationSchema = z.object({
-  type: z.enum(['conspiracy', 'literary', 'neutral', 'promotional', 'opinion', 'news_report', 'other']).describe('The overall detected primary type of the content.'),
-  score: z.number().min(0).max(100).describe('A score (0-100) related to the detected type. For conspiracy: risk/intensity. For literary: rhetorical richness. For neutral: objectivity level.'),
-  reasoning: z.string().describe('Brief reasoning for this overall content classification (2-3 sentences).'),
+  type: z.enum(['conspiracy', 'literary', 'neutral', 'promotional', 'opinion', 'news_report', 'other']).describe('The overall detected primary type of the content based on its style, purpose, and characteristics.'),
+  score: z.number().min(0).max(100).describe('A score (0-100) reflecting the confidence or dominance of the detected content type. For conspiracy: risk/intensity (e.g., 65+). For literary: rhetorical richness (e.g., 25-45%). For neutral: objectivity level.'),
+  reasoning: z.string().describe('Brief reasoning for this overall content classification (2-3 sentences), highlighting key indicators.'),
 });
 
 const ClassifyCognitiveCategoriesInputSchema = z.object({
@@ -36,7 +36,7 @@ export type ClassifyCognitiveCategoriesInput = z.infer<typeof ClassifyCognitiveC
 
 
 const ClassifyCognitiveCategoriesOutputSchema = z.object({
-  classifiedCategories: z.array(ClassifiedCategorySchema).describe('A list of cognitive categories identified, their intensities, and descriptions.'),
+  classifiedCategories: z.array(ClassifiedCategorySchema).describe('A list of cognitive categories identified, their intensities, and descriptions. This should include assessments for Emotional, Authority, Logical Fallacy, Social Pressure, and Information Bias triggers, plus any other relevant categories identified.'),
   overallClassification: ContentTypeClassificationSchema.describe('The overall classification of the content based on the detected categories and their intensities.'),
 });
 export type ClassifyCognitiveCategoriesOutput = z.infer<typeof ClassifyCognitiveCategoriesOutputSchema>;
@@ -51,12 +51,20 @@ const classifyCognitiveCategoriesPrompt = ai.definePrompt({
   output: {schema: ClassifyCognitiveCategoriesOutputSchema},
   prompt: `You are an expert in cognitive science, rhetoric, and content analysis.
   Given the following elements detected in a text (summary, manipulative techniques, cognitive biases, unverifiable facts) and the original text itself, your task is to:
-  1. Identify and classify specific cognitive categories (e.g., fallacies like 'straw man', 'ad hominem'; biases like 'confirmation bias', 'availability heuristic'; rhetorical devices like 'appeal to emotion', 'loaded language').
-  2. For each identified category, provide an intensity score from 0 (not present/very weak) to 10 (very strong/dominant in the text).
-  3. Provide a brief description (1-2 sentences) explaining its manifestation based on the provided detected elements and original text.
-  4. Perform an overall classification of the content's primary type. Choose from: 'conspiracy', 'literary', 'neutral', 'promotional', 'opinion', 'news_report', 'other'.
-  5. Provide a score (0-100) relevant to this classification (e.g., for 'conspiracy', this is a risk/intensity score like 65+; for 'literary', this could be a rhetorical richness score like 25-30%; for 'neutral', an objectivity score where higher is more neutral).
-  6. Provide a brief reasoning (2-3 sentences) for the overall classification and score, considering the detected elements and their intensities.
+
+  1.  **Overall Content Classification**:
+      a.  Determine the primary **type** of the content from: 'conspiracy', 'literary', 'neutral', 'promotional', 'opinion', 'news_report', 'other'.
+      b.  Assign a **score** (0-100) reflecting the strength/confidence of this classification. Guidelines:
+          *   'conspiracy': High scores (e.g., 65-100) indicate strong presence.
+          *   'literary': Moderate scores (e.g., 25-45%) for rich rhetorical content.
+          *   'neutral': Higher scores indicate greater objectivity, lower scores for baseline/mixed.
+      c.  Provide a brief **reasoning** for this classification.
+
+  2.  **Specific Cognitive Trigger Analysis**:
+      a.  For each of the following core cognitive triggers: **Emotional, Authority, Logical Fallacy, Social Pressure, Information Bias**:
+          i.  Determine its **intensity** in the text (0 for not present, 10 for very dominant).
+          ii. Provide a **description** explaining its manifestation AND **explicitly state how the overall content type (determined in step 1) influenced your intensity rating for this specific trigger.** For example, "The literary context means the appeal to authority here is more about establishing ethos (intensity 4/10) rather than a manipulative fallacy." or "The conspiracy context amplifies the perceived intensity of emotional appeals (intensity 8/10)."
+      b.  Identify any **other relevant cognitive categories** (specific fallacies, biases, rhetorical devices not covered above), their intensities, and descriptions influenced by context.
 
   Input from previous analysis:
   Summary: {{{analysisSummary}}}
@@ -67,12 +75,9 @@ const classifyCognitiveCategoriesPrompt = ai.definePrompt({
   Original Text for context:
   {{{originalText}}}
 
-  Base your classification and intensity scores on the prevalence and impact of the identified elements within the original text.
+  Base your classification and intensity scores on the prevalence and impact of the identified elements within the original text, considering the overall context.
   Ensure your output strictly adheres to the defined JSON schema for classifiedCategories and overallClassification.
-  For overall classification scores, aim for these general guidelines if applicable:
-  - Conspiracy content: ~65%+
-  - Literary content (focusing on legitimate rhetoric): ~25-30%
-  - Neutral content: Lower scores, indicating baseline or objectivity.
+  The 'classifiedCategories' array should prominently feature entries for Emotional, Authority, Logical Fallacy, Social Pressure, and Information Bias.
   `,
 });
 
@@ -87,11 +92,11 @@ const classifyCognitiveCategoriesFlow = ai.defineFlow(
     if (!output) {
       throw new Error('Cognitive classification failed to produce an output.');
     }
-    // Ensure the output structure matches, especially if the LLM might sometimes omit an empty array
+    // Ensure the output structure matches, especially if the LLM might sometimes omit an empty array for classifiedCategories
+    // or if overallClassification is missing.
     return {
       classifiedCategories: output.classifiedCategories || [],
-      overallClassification: output.overallClassification
+      overallClassification: output.overallClassification || { type: 'other', score: 0, reasoning: 'Overall classification data was not provided by the model.' }
     };
   }
 );
-
