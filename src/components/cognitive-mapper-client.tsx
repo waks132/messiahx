@@ -49,12 +49,15 @@ const initialClassificationResult: ClassifyCognitiveCategoriesOutput = {
   }
 };
 
-// Moved from ReformulationPanel to be accessible for state initialization
+// Moved from ReformulationPanel to be accessible for state initialization and new styles
 const reformulationStyles = [
   { value: "neutral", label: "Neutre et Objectif" },
   { value: "messianic", label: "Messianique / Prophétique" },
   { value: "paranoid", label: "Paranoïaque / Conspirateur" },
   { value: "analytical_rhetoric", label: "Analyse Rhétorique Détaillée" },
+  { value: "simplified_eli5", label: "Simplifié (ELI5)"},
+  { value: "poetic_metaphoric", label: "Poétique / Métaphorique"},
+  { value: "technical_detailed", label: "Technique / Scientifique Détaillé"},
 ];
 
 export default function CognitiveMapperClient() {
@@ -80,24 +83,21 @@ export default function CognitiveMapperClient() {
 
   const [activeTab, setActiveTab] = useState<string>("input");
   
-  // Initialize with a simple default, then set via useEffect
   const [selectedReformulationStyle, setSelectedReformulationStyle] = useState<string>("neutral"); 
 
   const { toast } = useToast();
   
   useEffect(() => {
-    // Set the default reformulation style once the component mounts and reformulationStyles is available
-    if (reformulationStyles.length > 0) {
+    if (reformulationStyles.length > 0 && !selectedReformulationStyle) {
       setSelectedReformulationStyle(reformulationStyles[0].value);
     }
-  }, []); // Empty dependency array means this runs once on mount
+  }, []); 
 
   useEffect(() => {
-    // Pre-fill reformulationInputText if inputText changes and reformulationInputText is empty or was same as old inputText
     if (inputText.trim() !== "" && (reformulationInputText.trim() === "" || reformulationInputText === inputText)) {
         setReformulationInputText(inputText);
     }
-  }, [inputText]); // Only run when inputText changes. Removed reformulationInputText from deps to avoid loops if not careful
+  }, [inputText]); 
 
   const handleAnalyze = async () => {
     if (!inputText.trim()) {
@@ -337,8 +337,8 @@ export default function CognitiveMapperClient() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-auto max-h-80 pr-2">
-                    <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed bg-muted/30 p-3 rounded-md shadow-inner">
+                  <ScrollArea className="h-96 pr-3 border rounded-md bg-muted/20 shadow-inner">
+                    <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed p-4">
                       {contextualSearchResult.researchResult || "Aucun résultat."}
                     </p>
                   </ScrollArea>
@@ -354,8 +354,8 @@ export default function CognitiveMapperClient() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                   <ScrollArea className="h-auto max-h-80 pr-2">
-                    <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed bg-muted/30 p-3 rounded-md shadow-inner">
+                   <ScrollArea className="h-96 pr-3 border rounded-md bg-muted/20 shadow-inner">
+                    <p className="text-foreground/90 whitespace-pre-wrap text-sm leading-relaxed p-4">
                       {manipulationSearchResult.manipulationInsights || "Aucun résultat."}
                     </p>
                   </ScrollArea>
@@ -392,7 +392,7 @@ export default function CognitiveMapperClient() {
            <ReformulationPanel
             reformulationInputText={reformulationInputText}
             setReformulationInputText={setReformulationInputText}
-            reformulationStyles={reformulationStyles} // Pass the styles array
+            reformulationStyles={reformulationStyles} 
             selectedReformulationStyle={selectedReformulationStyle}
             setSelectedReformulationStyle={setSelectedReformulationStyle}
             reformulationResult={reformulationResult}
@@ -416,5 +416,3 @@ export default function CognitiveMapperClient() {
     </div>
   );
 }
-
-    

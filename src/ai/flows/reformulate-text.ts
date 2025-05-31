@@ -17,7 +17,7 @@ import type { PromptsData } from '@/app/config/prompts/page';
 
 const ReformulateTextInputSchema = z.object({
   text: z.string().describe('The text to reformulate.'),
-  style: z.string().describe('The desired reformulation style (e.g., "neutral", "messianic", "paranoid", "analytical_rhetoric").'),
+  style: z.string().describe('The desired reformulation style (e.g., "neutral", "messianic", "paranoid", "analytical_rhetoric", "simplified_eli5", "poetic_metaphoric", "technical_detailed").'),
 });
 export type ReformulateTextInput = z.infer<typeof ReformulateTextInputSchema>;
 
@@ -28,7 +28,7 @@ const ReformulateTextOutputSchema = z.object({
 export type ReformulateTextOutput = z.infer<typeof ReformulateTextOutputSchema>;
 
 // This configuration is hardcoded to match the structure in `public/prompts.json -> reformulationPrompts`.
-// Ideally, this would be dynamically loaded.
+// Ideally, this would be dynamically loaded or synced.
 const reformulationPromptsConfig: PromptsData['reformulationPrompts'] = {
   neutral: {
     name: 'Neutral Reformulation',
@@ -53,6 +53,24 @@ const reformulationPromptsConfig: PromptsData['reformulationPrompts'] = {
     description: 'Analyze text for rhetorical strategies.',
     system_prompt_template: "Tu es un analyste expert en rhétorique cognitive. Ton rôle est d'identifier dans un texte les figures de style, leviers émotionnels ou argumentatifs, et les stratégies d'influence implicites. Produis un texte développé, détaillé, substantiel et d'une longueur significative.\n\nStructure de réponse attendue :\n\n| Stratégie | Extrait | Effet cognitif | Intention perçue |\n|-----------|---------|----------------|------------------|\n\nExemples de stratégies : appel à la peur, dichotomie, autorité, exagération, généralisation, analogie.\n\nAnalyse précise, pas d'interprétation morale. Sois complet, détaillé et approfondi. Assure-toi de fournir une réponse complète, détaillée, substantielle et bien développée.",
     user_prompt_template: "Fais une analyse rhétorique complète, détaillée, approfondie et substantielle du texte suivant :\n{text}"
+  },
+  simplified_eli5: {
+    name: "Simplifié (ELI5)",
+    description: "Expliquer comme si j'avais 5 ans. Utile pour vulgariser des concepts complexes.",
+    system_prompt_template: "Tu es un expert en vulgarisation. Reformule le texte suivant comme si tu l'expliquais à un enfant de 5 ans, de manière très simple, claire, avec des analogies faciles à comprendre, mais sans perdre l'idée principale. Produis un texte développé, détaillé, substantiel et d'une longueur significative. Assure-toi de fournir une réponse complète, détaillée, substantielle et bien développée.",
+    user_prompt_template: "Simplifie ce texte (ELI5) de manière exhaustive, détaillée et approfondie :\n{text}"
+  },
+  poetic_metaphoric: {
+    name: "Poétique / Métaphorique",
+    description: "Reformuler avec un langage imagé, lyrique.",
+    system_prompt_template: "Tu es un poète et un maître des métaphores. Reformule le texte suivant avec un langage riche, imagé, lyrique et plein de figures de style. Transforme les idées en évocations poétiques. Produis un texte développé, détaillé, substantiel et d'une longueur significative. Assure-toi de fournir une réponse complète, détaillée, substantielle et bien développée.",
+    user_prompt_template: "Réécris ce texte dans un style poétique et métaphorique, de façon complète, détaillée, approfondie et substantielle :\n{text}"
+  },
+  technical_detailed: {
+    name: "Technique / Scientifique Détaillé",
+    description: "Utiliser un jargon précis, fournir des détails techniques.",
+    system_prompt_template: "Tu es un expert scientifique et technique. Reformule le texte suivant en utilisant un langage précis, un jargon technique approprié (si pertinent), et en fournissant des détails et des explications approfondies. Adopte une perspective rigoureuse et analytique. Produis un texte développé, détaillé, substantiel et d'une longueur significative. Assure-toi de fournir une réponse complète, détaillée, substantielle et bien développée.",
+    user_prompt_template: "Reformule ce texte dans un style technique et scientifique détaillé, avec une analyse approfondie et un développement substantiel :\n{text}"
   }
 };
 
@@ -94,13 +112,15 @@ const reformulateTextFlow = ai.defineFlow(
     const userPromptContent = selectedPrompts.user_prompt_template.replace('{text}', text);
       
     console.log(`Reformulating text for style "${style}". User prompt length: ${userPromptContent.length}. System prompt length: ${systemPromptContent.length}`);
-    console.log(`User prompt content (first 500 chars): ${userPromptContent.substring(0,500)}`);
-    console.log(`System prompt content (first 500 chars): ${systemPromptContent.substring(0,500)}`);
+    console.log(`User prompt content (first 200 chars): ${userPromptContent.substring(0,200)}...`);
+    console.log(`System prompt content (first 200 chars): ${systemPromptContent.substring(0,200)}...`);
 
     try {
       const {text: reformulatedTextResult} = await ai.generate({
-        systemInstruction: [{ text: systemPromptContent }], // System instruction as Part[]
-        prompt: [{ text: userPromptContent }],             // User prompt as Part[]
+        prompt: [ 
+          { role: 'system', content: [{ text: systemPromptContent }] }, // System message as first element
+          { role: 'user', content: [{ text: userPromptContent }] },   // User message as second element
+        ],
         output: { format: 'text' },
         config: { temperature: 0.7 }
       });
@@ -133,9 +153,9 @@ const reformulateTextFlow = ai.defineFlow(
         errorMessage = error;
       }
       
-      console.error(`Problematic input text for style "${style}" (first 500 chars): ${text.substring(0,500)}`);
-      console.error(`Problematic system prompt for style "${style}" (first 500 chars): ${systemPromptContent.substring(0,500)}`);
-      console.error(`Problematic user prompt template for style "${style}" (first 500 chars): ${selectedPrompts.user_prompt_template.substring(0,500)}`);
+      console.error(`Problematic input text for style "${style}" (first 200 chars): ${text.substring(0,200)}...`);
+      console.error(`Problematic system prompt for style "${style}" (first 200 chars): ${systemPromptContent.substring(0,200)}...`);
+      console.error(`Problematic user prompt template for style "${style}" (first 200 chars): ${selectedPrompts.user_prompt_template.substring(0,200)}...`);
 
       return {
         reformulatedText: `Failed to reformulate text with style "${style}": ${errorMessage}. Veuillez fournir une réponse détaillée, complète, substantielle et bien développée.`,
@@ -144,6 +164,3 @@ const reformulateTextFlow = ai.defineFlow(
     }
   }
 );
-    
-
-    
