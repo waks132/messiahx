@@ -8,7 +8,7 @@ body {
 
 @layer base {
   :root {
-    /* Inspired by user's provided CSS:
+    /* Original reference colors from user's CSS:
        --primary-color: #0d6efd; (hsl(211, 96%, 47%))
        --success-color: #198754; (hsl(152, 69%, 31%))
        --warning-color: #ffc107; (hsl(45, 100%, 51%))
@@ -16,103 +16,99 @@ body {
        --info-color: #0dcaf0; (hsl(190, 88%, 52%))
        --dark-color: #212529; (hsl(210, 10%, 15%))
        --light-color: #f8f9fa; (hsl(210, 17%, 98%))
-       Saturated purple #A050A0 (hsl(300, 33%, 47%)) - Original PRD
-       Light grey #F0F0F3 (hsl(240, 13%, 95%)) - Original PRD
-       Desaturated pink #E090E0 (hsl(300, 53%, 72%)) - Original PRD
     */
 
-    /* Primary Theme: Using a blue similar to user's --primary-color */
-    --background: 220 10% 10%; /* Darker background like --dark-color */
-    --foreground: 210 15% 85%; /* Lighter text for contrast */
+    /* Primary Theme: Dark Blue/Grey, with Teal Accent */
+    --background: 220 13% 10%; /* Darker shade, close to #212529 */
+    --foreground: 210 17% 88%; /* Lighter text for contrast, inspired by #f8f9fa */
 
-    --card: 220 10% 15%; /* Slightly lighter than background */
-    --card-foreground: 210 15% 85%;
+    --card: 220 13% 15%; /* Slightly lighter than background */
+    --card-foreground: 210 17% 88%;
 
-    --popover: 220 10% 12%;
-    --popover-foreground: 210 15% 85%;
+    --popover: 220 13% 12%;
+    --popover-foreground: 210 17% 88%;
 
-    --primary: 211 90% 55%; /* Brighter blue, closer to #0d6efd */
-    --primary-foreground: 210 15% 95%;
+    --primary: 211 90% 58%; /* Vibrant Blue, close to #0d6efd */
+    --primary-foreground: 210 15% 98%;
 
-    --secondary: 210 10% 25%; /* Muted secondary */
-    --secondary-foreground: 210 15% 80%;
+    --secondary: 215 10% 28%; /* Muted secondary */
+    --secondary-foreground: 210 15% 85%;
 
-    --muted: 210 10% 20%;
-    --muted-foreground: 210 10% 55%;
+    --muted: 215 10% 22%;
+    --muted-foreground: 210 10% 60%;
 
-    /* Accent: Using a purple from original PRD, slightly adjusted for dark theme */
-    --accent: 300 50% 65%; /* #C973C9 - Adjusted desaturated pink */
-    --accent-foreground: 300 10% 15%;
+    /* Accent: Changed from pink/purple to a Teal/Cyan for a more modern/tech feel */
+    --accent: 180 70% 45%; /* Teal - HSL for a color like #17a2b8 or #0dcaf0 */
+    --accent-foreground: 210 10% 95%; /* Light text on teal accent */
 
-    --destructive: 354 70% 58%; /* Closer to #dc3545 */
+    --destructive: 354 70% 58%; /* Red, close to #dc3545 */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 210 10% 30%;
-    --input: 210 10% 28%;
-    --ring: 211 80% 60%;
+    --border: 215 10% 35%;
+    --input: 215 10% 32%;
+    --ring: 180 65% 50%; /* Ring color matching the new accent */
     
-    --chart-1: 211 90% 55%; /* primary */
-    --chart-2: 300 50% 65%; /* accent */
+    --chart-1: 211 90% 58%; /* primary */
+    --chart-2: 180 70% 45%; /* accent (new teal) */
     --chart-3: 190 80% 55%; /* info-color like */
     --chart-4: 45 100% 55%; /* warning-color like */
     --chart-5: 152 65% 45%; /* success-color like */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 220 10% 12%;
-    --sidebar-foreground: 210 15% 80%;
-    --sidebar-primary: 211 90% 55%;
-    --sidebar-primary-foreground: 210 15% 95%;
-    --sidebar-accent: 300 50% 55%;
-    --sidebar-accent-foreground: 300 10% 90%;
-    --sidebar-border: 210 10% 25%;
-    --sidebar-ring: 211 80% 60%;
+    --sidebar-background: 220 13% 12%;
+    --sidebar-foreground: 210 17% 85%;
+    --sidebar-primary: 211 90% 58%;
+    --sidebar-primary-foreground: 210 15% 98%;
+    --sidebar-accent: 180 70% 45%; /* new accent */
+    --sidebar-accent-foreground: 210 10% 95%;
+    --sidebar-border: 215 10% 30%;
+    --sidebar-ring: 180 65% 50%; /* new accent ring */
   }
 
-  /* Light theme adjustments - keeping original PRD light theme for now, can be harmonized later */
   .light {
-    --background: 240 13% 95%; /* #F0F0F3 Light grey */
-    --foreground: 225 10% 20%; /* Darker, slightly desaturated purple/blue for text */
+    --background: 210 17% 98%; /* --light-color #f8f9fa */
+    --foreground: 210 10% 15%; /* --dark-color #212529 */
 
-    --card: 240 13% 100%;
-    --card-foreground: 225 10% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 10% 15%;
 
-    --popover: 240 13% 100%;
-    --popover-foreground: 225 10% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 10% 15%;
 
-    --primary: 300 33% 47%; /* #A050A0 Saturated purple */
-    --primary-foreground: 300 33% 95%;
+    --primary: 211 96% 47%; /* --primary-color #0d6efd */
+    --primary-foreground: 210 17% 98%;
 
-    --secondary: 300 53% 88%; /* Lighter desaturated Pink for secondary elements #F2D9F2 */
-    --secondary-foreground: 300 33% 40%; /* Darker purple for text on secondary */
+    --secondary: 210 17% 92%; /* Lighter grey */
+    --secondary-foreground: 210 10% 25%;
 
-    --muted: 240 10% 88%;
-    --muted-foreground: 240 7% 45%;
+    --muted: 210 17% 90%;
+    --muted-foreground: 210 10% 45%;
 
-    --accent: 300 53% 72%; /* #E090E0 Desaturated pink */
-    --accent-foreground: 300 25% 25%; /* Darker pink/purple for text on accent */
+    --accent: 180 70% 40%; /* Darker Teal for light mode contrast */
+    --accent-foreground: 0 0% 98%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 354 70% 54%; /* --danger-color #dc3545 */
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 10% 83%;
-    --input: 240 10% 90%;
-    --ring: 300 33% 55%;
+    --border: 210 17% 88%;
+    --input: 210 17% 85%;
+    --ring: 180 65% 45%;
     
-    --chart-1: 300 33% 47%;
-    --chart-2: 300 53% 72%;
-    --chart-3: 210 40% 50%;
-    --chart-4: 30 80% 60%;
-    --chart-5: 120 40% 55%;
+    --chart-1: 211 96% 47%;
+    --chart-2: 180 70% 40%;
+    --chart-3: 190 88% 52%;
+    --chart-4: 45 100% 51%;
+    --chart-5: 152 69% 31%;
 
-    --sidebar-background: 240 10% 98%;
-    --sidebar-foreground: 225 10% 25%;
-    --sidebar-primary: 300 33% 47%;
-    --sidebar-primary-foreground: 300 33% 95%;
-    --sidebar-accent: 300 53% 80%;
-    --sidebar-accent-foreground: 300 25% 30%;
-    --sidebar-border: 240 10% 85%;
-    --sidebar-ring: 300 33% 55%;
+    --sidebar-background: 210 15% 95%;
+    --sidebar-foreground: 210 10% 20%;
+    --sidebar-primary: 211 96% 47%;
+    --sidebar-primary-foreground: 210 17% 98%;
+    --sidebar-accent: 180 70% 40%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 210 15% 80%;
+    --sidebar-ring: 180 65% 45%;
   }
 }
 
