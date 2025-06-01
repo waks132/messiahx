@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InputPanel } from "@/components/panels/input-panel";
 import { CognitiveAnalysisPanel } from "@/components/panels/cognitive-analysis-panel";
@@ -42,7 +42,7 @@ import { PersonaChatPanel } from '@/components/persona-lab/persona-chat-panel';
 
 import { Logo } from '@/components/logo';
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Quote, Drama, BrainCircuit, SearchCheck, PenTool, Settings, Telescope, MessageSquareText, Languages, Copy, AlertCircle, CheckCircle2, HelpCircle, BotMessageSquareIcon } from 'lucide-react';
+import { FileText, Quote, Drama, BrainCircuit, SearchCheck, PenTool, Settings, Telescope, MessageSquareText, Languages, Copy, AlertCircle, CheckCircle2, HelpCircle, BotMessageSquareIcon, Trash2, Users } from 'lucide-react';
 
 const initialAnalysisResults: AnalyzeTextOutput = {
   summary: "",
@@ -78,7 +78,7 @@ interface UILabels {
   reformulationTab: string;
   paranoidTab: string;
   configTab: string;
-  personaLabTab: string; // New
+  personaLabTab: string; 
   languageLabel: string;
   contextualSearchTitle: string;
   manipulationSearchTitle: string;
@@ -139,6 +139,13 @@ interface UILabels {
   personaChatError: string;
   emptyPersonaNameError: string;
   emptyPersonaDescriptionError: string;
+  savedPersonasTitle: string;
+  noSavedPersonas: string;
+  selectPersonaButton: string;
+  deletePersonaButton: string;
+  newPersonaButton: string;
+  personaDeletedSuccess: string;
+  personaSelectedSuccess: string;
 
 }
 
@@ -211,6 +218,13 @@ const uiContent: Record<string, UILabels> = {
     personaChatError: "Erreur de Chat Persona",
     emptyPersonaNameError: "Le nom du persona ne peut pas être vide.",
     emptyPersonaDescriptionError: "La description du persona ne peut pas être vide.",
+    savedPersonasTitle: "Personas Sauvegardés",
+    noSavedPersonas: "Aucun persona sauvegardé.",
+    selectPersonaButton: "Charger",
+    deletePersonaButton: "Supprimer",
+    newPersonaButton: "Nouveau Persona",
+    personaDeletedSuccess: "Persona supprimé.",
+    personaSelectedSuccess: "Persona chargé.",
   },
   en: {
     inputTab: "Input & Research",
@@ -280,8 +294,17 @@ const uiContent: Record<string, UILabels> = {
     personaChatError: "Persona Chat Error",
     emptyPersonaNameError: "Persona name cannot be empty.",
     emptyPersonaDescriptionError: "Persona description cannot be empty.",
+    savedPersonasTitle: "Saved Personas",
+    noSavedPersonas: "No saved personas.",
+    selectPersonaButton: "Load",
+    deletePersonaButton: "Delete",
+    newPersonaButton: "New Persona",
+    personaDeletedSuccess: "Persona deleted.",
+    personaSelectedSuccess: "Persona loaded.",
   },
 };
+
+const LOCAL_STORAGE_PERSONAS_KEY = 'messiahx_persona_profiles';
 
 const WebSearchStatusDisplay = ({ status, labels }: { status: WebSearchOutput['source'] | null, labels: UILabels }) => {
   if (!status) return null;
@@ -291,17 +314,17 @@ const WebSearchStatusDisplay = ({ status, labels }: { status: WebSearchOutput['s
   let colorClass = "text-muted-foreground";
 
   switch (status) {
-    case "PerplexityAPI_Success":
+    case "PerplexityAPI": // Adjusted to match actual successful source string
       IconComponent = CheckCircle2;
       text = labels.webSearchStatusSuccess;
       colorClass = "text-green-500";
       break;
-    case "PerplexityAPI_KeyMissing":
+    case "PlaceholderWebSearchTool": // Adjusted to match actual placeholder source string
       IconComponent = AlertCircle;
       text = labels.webSearchStatusKeyMissing;
       colorClass = "text-orange-500";
       break;
-    case "PerplexityAPI_Error":
+    case "PerplexityAPIError":
       IconComponent = AlertCircle;
       text = labels.webSearchStatusError;
       colorClass = "text-destructive";
@@ -354,11 +377,34 @@ export default function CognitiveMapperClient() {
   const [personaChatMessages, setPersonaChatMessages] = useState<ChatMessage[]>([]);
   const [isGeneratingPersona, setIsGeneratingPersona] = useState<boolean>(false);
   const [isSendingPersonaMessage, setIsSendingPersonaMessage] = useState<boolean>(false);
+  const [savedPersonas, setSavedPersonas] = useState<GeneratePersonaProfileOutput[]>([]);
 
 
   const [activeTab, setActiveTab] = useState<string>("input");
   
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Load personas from localStorage on initial mount
+    try {
+      const storedPersonas = localStorage.getItem(LOCAL_STORAGE_PERSONAS_KEY);
+      if (storedPersonas) {
+        setSavedPersonas(JSON.parse(storedPersonas));
+      }
+    } catch (error) {
+      console.error("Failed to load personas from localStorage:", error);
+      toast({ title: labels.errorToastTitle, description: "Impossible de charger les personas sauvegardés.", variant: "destructive" });
+    }
+  }, [labels.errorToastTitle]);
+
+  const savePersonasToLocalStorage = useCallback((personasToSave: GeneratePersonaProfileOutput[]) => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_PERSONAS_KEY, JSON.stringify(personasToSave));
+    } catch (error) {
+      console.error("Failed to save personas to localStorage:", error);
+      toast({ title: labels.errorToastTitle, description: "Impossible de sauvegarder les personas.", variant: "destructive" });
+    }
+  }, [labels.errorToastTitle]);
   
   useEffect(() => {
     if (reformulationStyles.length > 0 && !selectedReformulationStyle) {
@@ -583,9 +629,7 @@ export default function CognitiveMapperClient() {
       return;
     }
     setIsGeneratingPersona(true);
-    setGeneratedPersonaProfile(null);
-    setActivePersonaForChat(null);
-    setPersonaChatMessages([]);
+    setGeneratedPersonaProfile(null); 
     try {
       const result = await generatePersonaProfileAction({
         personaName: personaLabNameInput,
@@ -597,7 +641,11 @@ export default function CognitiveMapperClient() {
         toast({ title: labels.profileGenerationError, description: result.personaProfile.tagline, variant: "destructive" });
       } else {
         toast({ title: labels.profileGeneratedSuccess });
-        setActivePersonaForChat(result.personaProfile); // Activate for chat
+        const newSavedPersonas = [...savedPersonas, result];
+        setSavedPersonas(newSavedPersonas);
+        savePersonasToLocalStorage(newSavedPersonas);
+        setActivePersonaForChat(result.personaProfile); 
+        setPersonaChatMessages([]); 
       }
     } catch (error: any) {
       toast({ title: labels.profileGenerationError, description: error.message || "Erreur inconnue", variant: "destructive" });
@@ -605,6 +653,38 @@ export default function CognitiveMapperClient() {
       setIsGeneratingPersona(false);
     }
   };
+
+  const handleSelectPersona = (personaOutput: GeneratePersonaProfileOutput) => {
+    setPersonaLabNameInput(personaOutput.personaProfile.name);
+    setPersonaLabDescriptionInput(personaOutput.personaProfile.overallDescription);
+    setGeneratedPersonaProfile(personaOutput);
+    setActivePersonaForChat(personaOutput.personaProfile);
+    setPersonaChatMessages([]); // Clear chat history for the newly selected persona
+    toast({ title: labels.personaSelectedSuccess, description: `${personaOutput.personaProfile.name} ${currentLanguage === 'fr' ? 'chargé et actif.' : 'loaded and active.'}`});
+  };
+
+  const handleDeletePersona = (personaNameToDelete: string) => {
+    const newSavedPersonas = savedPersonas.filter(p => p.personaProfile.name !== personaNameToDelete);
+    setSavedPersonas(newSavedPersonas);
+    savePersonasToLocalStorage(newSavedPersonas);
+    toast({ title: labels.personaDeletedSuccess });
+    if (activePersonaForChat?.name === personaNameToDelete) {
+      setActivePersonaForChat(null);
+      setGeneratedPersonaProfile(null);
+      setPersonaLabNameInput("");
+      setPersonaLabDescriptionInput("");
+      setPersonaChatMessages([]);
+    }
+  };
+
+  const handleNewPersona = () => {
+    setPersonaLabNameInput("");
+    setPersonaLabDescriptionInput("");
+    setGeneratedPersonaProfile(null);
+    setActivePersonaForChat(null);
+    setPersonaChatMessages([]);
+  };
+
 
   const handleSendPersonaChatMessage = async (message: string) => {
     if (!activePersonaForChat) {
@@ -619,14 +699,13 @@ export default function CognitiveMapperClient() {
       const chatInput: ChatWithPersonaInput = {
         personaProfile: activePersonaForChat,
         userMessage: message,
-        chatHistory: personaChatMessages, // send previous messages for context
+        chatHistory: personaChatMessages, 
         language: currentLanguage,
       };
       const result = await chatWithPersonaAction(chatInput);
       
       if (result.personaResponse.startsWith("Failed") || result.personaResponse.startsWith("Échec")) {
          toast({ title: labels.personaChatError, description: result.personaResponse, variant: "destructive" });
-         // Optionally remove the user's message or add an error message from the bot
       } else {
         const personaResponseMessage: ChatMessage = { role: 'model', content: result.personaResponse };
         setPersonaChatMessages(prev => [...prev, personaResponseMessage]);
@@ -647,7 +726,7 @@ export default function CognitiveMapperClient() {
 
 
   return (
-    <div className="w-full max-w-6xl mx-auto"> 
+    <div className="w-full max-w-7xl mx-auto px-2"> {/* Increased max-width and added some padding */}
       <div className="flex justify-between items-center mb-6">
         <Logo />
         <div className="flex items-center gap-2">
@@ -668,28 +747,28 @@ export default function CognitiveMapperClient() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8 mb-6 bg-card/80 backdrop-blur-sm p-1.5 rounded-lg shadow-md">
           <TabsTrigger value="input" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <FileText className="mr-2 h-4 w-4" /> {labels.inputTab}
+            <FileText className="mr-1 h-4 w-4" /> {labels.inputTab}
           </TabsTrigger>
           <TabsTrigger value="analysis" disabled={!isAnalysisDone && !isAnalyzing} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <SearchCheck className="mr-2 h-4 w-4" /> {labels.analysisTab}
+            <SearchCheck className="mr-1 h-4 w-4" /> {labels.analysisTab}
           </TabsTrigger>
           <TabsTrigger value="classification" disabled={!isAnalysisDone && !isClassifying} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <BrainCircuit className="mr-2 h-4 w-4" /> {labels.classificationTab}
+            <BrainCircuit className="mr-1 h-4 w-4" /> {labels.classificationTab}
           </TabsTrigger>
           <TabsTrigger value="summary" disabled={!isMainAnalysisTextAvailable && !isGeneratingSummary && !isAnalysisDone} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <Quote className="mr-2 h-4 w-4" /> {labels.summaryTab}
+            <Quote className="mr-1 h-4 w-4" /> {labels.summaryTab}
           </TabsTrigger>
           <TabsTrigger value="reformulation" disabled={!isReformulationTextAvailable && !isReformulating} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <PenTool className="mr-2 h-4 w-4" /> {labels.reformulationTab}
+            <PenTool className="mr-1 h-4 w-4" /> {labels.reformulationTab}
           </TabsTrigger>
           <TabsTrigger value="paranoid" disabled={!isMainAnalysisTextAvailable && !isGeneratingParanoid} className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <Drama className="mr-2 h-4 w-4" /> {labels.paranoidTab}
+            <Drama className="mr-1 h-4 w-4" /> {labels.paranoidTab}
           </TabsTrigger>
            <TabsTrigger value="persona-lab" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <BotMessageSquareIcon className="mr-2 h-4 w-4" /> {labels.personaLabTab}
+            <BotMessageSquareIcon className="mr-1 h-4 w-4" /> {labels.personaLabTab}
           </TabsTrigger>
           <TabsTrigger value="config" className="data-[state=active]:bg-accent data-[state=active]:text-accent-foreground data-[state=active]:shadow-lg">
-            <Settings className="mr-2 h-4 w-4" /> {labels.configTab}
+            <Settings className="mr-1 h-4 w-4" /> {labels.configTab}
           </TabsTrigger>
         </TabsList>
 
@@ -801,31 +880,34 @@ export default function CognitiveMapperClient() {
           />
         </TabsContent>
         <TabsContent value="persona-lab">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PersonaGeneratorPanel
-              personaNameInput={personaLabNameInput}
-              setPersonaNameInput={setPersonaLabNameInput}
-              personaDescriptionInput={personaLabDescriptionInput}
-              setPersonaDescriptionInput={setPersonaLabDescriptionInput}
-              generatedPersonaProfile={generatedPersonaProfile}
-              handleGeneratePersonaProfile={handleGeneratePersonaForLab}
-              isGeneratingPersona={isGeneratingPersona}
-              currentLanguage={currentLanguage}
-              labels={labels}
-              onPersonaGenerated={(profile) => {
-                setGeneratedPersonaProfile(profile);
-                setActivePersonaForChat(profile.personaProfile);
-                setPersonaChatMessages([]); // Clear chat history for new persona
-              }}
-            />
-            <PersonaChatPanel
-              activePersona={activePersonaForChat}
-              chatMessages={personaChatMessages}
-              handleSendMessage={handleSendPersonaChatMessage}
-              isSendingMessage={isSendingPersonaMessage}
-              currentLanguage={currentLanguage}
-              labels={labels}
-            />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start"> {/* Changed to 3 columns */}
+            <div className="lg:col-span-1"> {/* Persona List and Generator */}
+              <PersonaGeneratorPanel
+                personaNameInput={personaLabNameInput}
+                setPersonaNameInput={setPersonaLabNameInput}
+                personaDescriptionInput={personaLabDescriptionInput}
+                setPersonaDescriptionInput={setPersonaLabDescriptionInput}
+                generatedPersonaProfile={generatedPersonaProfile}
+                handleGeneratePersonaProfile={handleGeneratePersonaForLab}
+                isGeneratingPersona={isGeneratingPersona}
+                currentLanguage={currentLanguage}
+                labels={labels}
+                savedPersonas={savedPersonas}
+                onSelectPersona={handleSelectPersona}
+                onDeletePersona={handleDeletePersona}
+                onNewPersona={handleNewPersona}
+              />
+            </div>
+            <div className="lg:col-span-2"> {/* Chat Panel */}
+              <PersonaChatPanel
+                activePersona={activePersonaForChat}
+                chatMessages={personaChatMessages}
+                handleSendMessage={handleSendPersonaChatMessage}
+                isSendingMessage={isSendingPersonaMessage}
+                currentLanguage={currentLanguage}
+                labels={labels}
+              />
+            </div>
           </div>
         </TabsContent>
         <TabsContent value="config">
@@ -835,3 +917,6 @@ export default function CognitiveMapperClient() {
     </div>
   );
 }
+
+
+    

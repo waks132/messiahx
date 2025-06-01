@@ -40,9 +40,9 @@ export function PersonaChatPanel({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll to bottom when new messages are added
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+      const { scrollHeight, clientHeight } = scrollAreaRef.current;
+      scrollAreaRef.current.scrollTo({ top: scrollHeight - clientHeight, behavior: 'smooth' });
     }
   }, [chatMessages]);
 
@@ -51,18 +51,24 @@ export function PersonaChatPanel({
     handleSendMessage(currentMessage);
     setCurrentMessage('');
   };
+  
+  // Calculate height for the chat panel
+  // This attempts to make it take up more of the available vertical space
+  // when the persona generator + list panel is on the side.
+  // It assumes the parent is a flex container or grid item.
+  const chatPanelHeight = "h-[calc(100vh-var(--header-height,150px)-var(--tabs-height,70px)-var(--footer-height,50px)-5rem)]"; // Adjust 5rem for margins/paddings
 
   if (!activePersona) {
     return (
-      <Card className="w-full shadow-lg">
+      <Card className={`w-full shadow-lg ${chatPanelHeight} flex flex-col`}>
         <CardHeader>
           <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
             <Bot className="h-5 w-5" />
             {labels.personaLabChatTitle}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center h-40 text-center">
+        <CardContent className="flex-grow flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center text-center">
             <AlertTriangle className="h-10 w-10 text-muted-foreground mb-3" />
             <p className="text-muted-foreground">{labels.personaLabChatNoActivePersona}</p>
           </div>
@@ -72,7 +78,7 @@ export function PersonaChatPanel({
   }
 
   return (
-    <Card className="w-full shadow-lg flex flex-col h-[calc(100vh-250px)] max-h-[700px]"> {/* Added height constraints */}
+    <Card className={`w-full shadow-lg flex flex-col ${chatPanelHeight} max-h-[80vh]`}>
       <CardHeader>
         <CardTitle className="font-headline text-xl flex items-center gap-2 text-primary">
           <Bot className="h-5 w-5" />
@@ -114,11 +120,11 @@ export function PersonaChatPanel({
           </div>
         </ScrollArea>
       </CardContent>
-      <CardFooter className="border-t p-4">
+      <CardFooter className="border-t p-4 bg-background/80 sticky bottom-0">
         <div className="flex w-full items-center gap-2">
           <Input
             type="text"
-            placeholder={labels.chatWithPersonaPlaceholder}
+            placeholder={`${labels.chatWithPersonaPlaceholder}${activePersona.name}...`}
             value={currentMessage}
             onChange={(e) => setCurrentMessage(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !isSendingMessage && onSendMessage()}
@@ -138,3 +144,5 @@ export function PersonaChatPanel({
     </Card>
   );
 }
+
+    
