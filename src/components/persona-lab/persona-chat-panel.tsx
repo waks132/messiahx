@@ -44,7 +44,7 @@ export function PersonaChatPanel({
       const { scrollHeight, clientHeight } = scrollAreaRef.current;
       scrollAreaRef.current.scrollTo({ top: scrollHeight - clientHeight, behavior: 'smooth' });
     }
-  }, [chatMessages]);
+  }, [chatMessages, isSendingMessage]); // Added isSendingMessage to scroll when typing indicator appears
 
   const onSendMessage = () => {
     if (!currentMessage.trim()) return;
@@ -52,11 +52,7 @@ export function PersonaChatPanel({
     setCurrentMessage('');
   };
   
-  // Calculate height for the chat panel
-  // This attempts to make it take up more of the available vertical space
-  // when the persona generator + list panel is on the side.
-  // It assumes the parent is a flex container or grid item.
-  const chatPanelHeight = "h-[calc(100vh-var(--header-height,150px)-var(--tabs-height,70px)-var(--footer-height,50px)-5rem)]"; // Adjust 5rem for margins/paddings
+  const chatPanelHeight = "h-[calc(100vh-var(--header-height,150px)-var(--tabs-height,70px)-var(--footer-height,50px)-5rem)]";
 
   if (!activePersona) {
     return (
@@ -110,7 +106,7 @@ export function PersonaChatPanel({
               </div>
             ))}
             {isSendingMessage && chatMessages[chatMessages.length -1]?.role === 'user' && (
-                 <div className="flex items-start gap-3 justify-start">
+                 <div className="flex items-start gap-3 justify-start animate-fadeIn">
                     <Bot className="h-6 w-6 text-primary flex-shrink-0 mt-1" />
                     <div className="max-w-[75%] rounded-lg px-4 py-2.5 shadow-md bg-muted text-muted-foreground">
                         <LoadingSpinner size="sm" />
@@ -144,5 +140,3 @@ export function PersonaChatPanel({
     </Card>
   );
 }
-
-    
