@@ -175,7 +175,6 @@ export async function researchManipulationAction(input: ResearchManipulationInpu
 export async function generatePersonaProfileAction(input: GeneratePersonaProfileInput): Promise<GeneratePersonaProfileOutput> {
   try {
     const result = await generatePersonaProfileFlow(input);
-    // Basic validation, more complex validation might be needed depending on schema
     if (!result || !result.personaProfile || !result.personaProfile.name) {
        const lang = input.language || 'fr';
        const errorMsg = lang === 'fr' ? 'Réponse invalide de la génération de profil.' : 'Invalid response from persona profile generation.';
@@ -189,7 +188,6 @@ export async function generatePersonaProfileAction(input: GeneratePersonaProfile
       ? `Échec de la génération du profil de persona : ${error instanceof Error ? error.message : "Erreur inconnue"}`
       : `Failed to generate persona profile: ${error instanceof Error ? error.message : "Unknown error"}`;
     
-    // Return a valid (minimal) error structure matching GeneratePersonaProfileOutput
     return {
       personaProfile: {
         name: input.personaName || (lang === 'fr' ? "Persona Indéfini (Erreur)" : "Undefined Persona (Error)"),
@@ -198,12 +196,8 @@ export async function generatePersonaProfileAction(input: GeneratePersonaProfile
         identitySignatures: {
           ame: { concept: "", coreValues: [], toneAndVoice: "", keyStatements: [] },
           systemeNerveux: { concept: "", coreCapabilities: [], methodology: { name: "", steps: [] }, functionalOutputs: [] }
-        },
-        operationalFormats: {
-          markdown: { purpose: "", usageContext: "", relationToJson: "" },
-          json: { purpose: "", usageContext: "", status: "" },
-          synchronizationNotice: ""
         }
+        // operationalFormats removed here as well for consistency in error object, though the schema doesn't have it anymore.
       }
     };
   }

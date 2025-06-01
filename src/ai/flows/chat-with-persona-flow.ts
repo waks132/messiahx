@@ -9,7 +9,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { GeneratePersonaProfileOutput } from './generate-persona-profile-flow'; // Assuming this is in the same directory or path is correct
+// Adjusted import based on the simplified PersonaProfileOutput
+import type { GeneratePersonaProfileOutput } from './generate-persona-profile-flow'; 
 
 // Schema for a single message in the chat history
 const ChatMessageSchema = z.object({
@@ -19,7 +20,8 @@ const ChatMessageSchema = z.object({
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 const ChatWithPersonaInputSchema = z.object({
-  personaProfile: z.custom<GeneratePersonaProfileOutput['personaProfile']>().describe("The full profile object of the AI persona."),
+  // Use the specific personaProfile type from the simplified GeneratePersonaProfileOutput
+  personaProfile: z.custom<GeneratePersonaProfileOutput['personaProfile']>().describe("The full profile object of the AI persona, focusing on its cognitive signatures."),
   userMessage: z.string().describe("The user's current message to the persona."),
   chatHistory: z.array(ChatMessageSchema).optional().describe("The history of the conversation so far."),
   language: z.string().default('fr').describe('The language for the persona response (e.g., "fr", "en").'),
@@ -45,7 +47,6 @@ const chatWithPersonaFlow = ai.defineFlow(
     const { personaProfile, userMessage, chatHistory = [], language } = input;
 
     // Construct the system prompt from the persona profile
-    // This is a simplified version; you might want to get more detailed if using operationalFormats.markdown.content
     let systemPromptContent = `You are the AI Persona named "${personaProfile.name}".
 Your tagline is: "${personaProfile.tagline}".
 Overall Description: ${personaProfile.overallDescription}
@@ -63,20 +64,11 @@ Methodology (${personaProfile.identitySignatures.systemeNerveux.methodology.name
 Functional Outputs: ${personaProfile.identitySignatures.systemeNerveux.functionalOutputs.join(', ')}.
 
 Instructions for interaction:
-${personaProfile.operationalFormats.markdown.purpose || 'Respond naturally based on your defined persona.'}
+You MUST fully embody the persona described above in your responses. Your primary goal is to respond naturally based on your defined persona characteristics (âme and système nerveux).
 You MUST respond in the language: ${language}.
 
 Engage in a conversation with the user. Consider the chat history provided.
 User's current message: "${userMessage}"`;
-
-    // Prepare messages for the LLM
-    const messages: Array<{role: 'system' | 'user' | 'model', content: string}> = [{ role: 'system', content: systemPromptContent }];
-    
-    // Add chat history
-    // Genkit's `generate` with Gemini might not directly support a long list of user/model turns in the `prompt` array in the same way some other APIs do.
-    // We are putting history into the system prompt for now or as part of the user prompt.
-    // For more complex history management, a different model or prompt structure might be needed.
-    // For now, let's append history to the system prompt context or user message.
     
     let fullUserPrompt = "";
     if (chatHistory.length > 0) {
@@ -88,10 +80,9 @@ User's current message: "${userMessage}"`;
     }
     fullUserPrompt += `Current user message: ${userMessage}`;
 
-
     try {
       const { text: personaResponseText } = await ai.generate({
-        prompt: [{ text: fullUserPrompt }], // User message combined with history
+        prompt: [{ text: fullUserPrompt }],
         systemInstruction: [{text: systemPromptContent}],
         output: { format: 'text' },
         config: { temperature: 0.7 }
