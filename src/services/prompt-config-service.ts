@@ -1,7 +1,15 @@
-
 'use server'; // This service might be used by server components/actions, or client if fetching directly
 
 import { remoteConfig, fetchAndActivate, getString } from '@/lib/firebase';
+
+// In‑memory cache for prompts returned from remote config.  Each entry is keyed
+// by the uppercase style and stores the resolved system/user prompt
+// templates.  This simple cache avoids repeatedly fetching the same
+// configuration from Firebase on every call and reduces latency and API
+// usage.  Note: this state is retained only during the lifetime of the
+// serverless function instance; it will be cleared when the instance is
+// recycled.
+const promptCache: Record<string, ReformulationPromptSet> = {};
 
 // Define default prompts here as fallbacks, mirroring what's in public/prompts.json or flow constants
 // This is crucial if Remote Config fails or specific keys are not set.
@@ -24,7 +32,6 @@ const DEFAULT_PROMPTS = {
   REFORMULATION_TECHNICAL_DETAILED_USER_PROMPT: "Reformule ce texte dans un style technique et scientifique détaillé, avec une analyse approfondie et un développement substantiel :\n{text}"
 };
 
-
 /**
  * Fetches a prompt string from Firebase Remote Config.
  * Falls back to a default value if Remote Config fetch fails or key is not found.
@@ -33,6 +40,15 @@ const DEFAULT_PROMPTS = {
  * @returns Promise<string> The prompt string.
  */
 async function getPromptFromRemoteConfig(key: string, defaultValue: string): Promise<string> {
+  // If remoteConfig is not available (due to missing env variables), skip fetching and
+  // return the default value immediately.  This prevents runtime errors when
+  // Firebase configuration is incomplete.
+  if (!remoteConfig) {
+    console.warn(
+      `Remote Config not initialized; returning default for key "${key}".`
+    );
+    return defaultValue;
+  }
   try {
     await fetchAndActivate(remoteConfig);
     const value = getString(remoteConfig, key);
@@ -53,6 +69,13 @@ export async function getReformulationPromptsForStyle(style: string): Promise<Re
   const systemKey = `REFORMULATION_${styleUpper}_SYSTEM_PROMPT`;
   const userKey = `REFORMULATION_${styleUpper}_USER_PROMPT`;
 
+  // Check cache first: if we already resolved prompts for this style in this
+  // process, return them immediately without calling Remote Config again.
+  const cached = promptCache[styleUpper];
+  if (cached) {
+    return cached;
+  }
+
   // Providing default values for system and user prompts in case they are not found in DEFAULT_PROMPTS
   const defaultSystemPrompt = (DEFAULT_PROMPTS as any)[systemKey] || `Default system prompt for ${style}. Please configure in Remote Config or defaults.`;
   const defaultUserPrompt = (DEFAULT_PROMPTS as any)[userKey] || `Default user prompt for {text} for ${style}. Please configure.`;
@@ -60,7 +83,11 @@ export async function getReformulationPromptsForStyle(style: string): Promise<Re
   const system_prompt_template = await getPromptFromRemoteConfig(systemKey, defaultSystemPrompt);
   const user_prompt_template = await getPromptFromRemoteConfig(userKey, defaultUserPrompt);
 
-  return { system_prompt_template, user_prompt_template };
+  const resolved: ReformulationPromptSet = { system_prompt_template, user_prompt_template };
+  // Store in cache for subsequent calls.  Future invocations within the same
+  // process will use this value and avoid hitting Remote Config again.
+  promptCache[styleUpper] = resolved;
+  return resolved;
 }
 
 // Add similar functions for other prompt categories if needed
